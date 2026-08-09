@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import PartyTypeController from '@/actions/App/Http/Controllers/PartyTypeController';
 
@@ -36,6 +36,17 @@ export default function Index({ partyTypes, filters }: Props) {
             success?: string;
         };
     };
+
+    // Success message Timer
+    const [showSuccess, setShowSuccess] = useState(false);
+
+    useEffect(() => {
+        if (flash?.success) {
+            setShowSuccess(true);
+            const timer = setTimeout(() => setShowSuccess(false), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [flash?.success]);
 
     // Search
     function handleSearch(e: FormEvent) {
@@ -107,9 +118,8 @@ export default function Index({ partyTypes, filters }: Props) {
                     </Link>
                 </div>
 
-                {/* Success Message */}
-                {flash?.success && (
-                    <div className="rounded-sm bg-green-50 px-4 py-3 text-sm text-green-700">
+                {showSuccess && flash?.success && (
+                    <div className="rounded-sm bg-green-50 px-4 py-3 text-sm text-green-700 text-center shadow-sm">
                         {flash.success}
                     </div>
                 )}
