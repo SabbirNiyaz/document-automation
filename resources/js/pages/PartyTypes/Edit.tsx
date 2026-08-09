@@ -32,7 +32,7 @@ export default function Edit({ partyType }: Props) {
         <>
             <Head title="Edit Party Type" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-sm p-4">
                 <div className="mx-auto w-full max-w-xl">
 
                     {/* Page Header */}
@@ -49,7 +49,7 @@ export default function Edit({ partyType }: Props) {
                     {/* Form */}
                     <form
                         onSubmit={submit}
-                        className="mt-6 space-y-5 rounded-xl border border-sidebar-border/70 bg-white p-6 shadow-sm dark:border-sidebar-border"
+                        className="mt-6 space-y-5 rounded-sm border border-sidebar-border/70 bg-white p-6 shadow-sm dark:border-sidebar-border"
                     >
                         {/* Party Type Name */}
                         <div>
@@ -70,7 +70,8 @@ export default function Edit({ partyType }: Props) {
                                         e.target.value
                                     )
                                 }
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
+                                px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 autoFocus
                             />
 
@@ -101,7 +102,8 @@ export default function Edit({ partyType }: Props) {
                                             | 'Inactive'
                                     )
                                 }
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
+                                px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
                             >
                                 <option value="Active">
                                     Active
@@ -131,7 +133,9 @@ export default function Edit({ partyType }: Props) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
+                                shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500
+                                focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                             >
                                 {processing
                                     ? 'Saving...'

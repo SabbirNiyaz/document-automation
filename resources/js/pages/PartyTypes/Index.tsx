@@ -51,11 +51,26 @@ export default function Index({ partyTypes, filters }: Props) {
         );
     }
 
+    // Clear search
+    function handleReset() {
+        setSearch('');
+
+        router.get(
+            PartyTypeController.index().url,
+            {},
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    }
+
     // Delete
     function handleDelete(partyType: PartyType) {
         if (
             !confirm(
-                `Delete "${partyType.partyTypeName}"? This can't be undone.`
+                `Are you sure you want to delete "${partyType.partyTypeName}"? 
+                This can't be undone.`
             )
         ) {
             return;
@@ -70,7 +85,7 @@ export default function Index({ partyTypes, filters }: Props) {
         <>
             <Head title="Party Types" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-sm p-4">
 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -86,15 +101,15 @@ export default function Index({ partyTypes, filters }: Props) {
 
                     <Link
                         href={PartyTypeController.create().url}
-                        className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="inline-flex items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     >
-                        + New Party Type
+                        Add Party Type
                     </Link>
                 </div>
 
                 {/* Success Message */}
                 {flash?.success && (
-                    <div className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-700">
+                    <div className="rounded-sm bg-green-50 px-4 py-3 text-sm text-green-700">
                         {flash.success}
                     </div>
                 )}
@@ -109,19 +124,31 @@ export default function Index({ partyTypes, filters }: Props) {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search by name..."
-                        className="w-full max-w-xs rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="w-full max-w-xs rounded-sm border-gray-300 text-sm shadow-sm 
+                        px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                     />
 
                     <button
                         type="submit"
-                        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                        className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
+                         font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer"
                     >
                         Search
                     </button>
+                    {(search || filters?.search) && (
+                        <button
+                            type="button"
+                            onClick={handleReset}
+                            className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
+                             font-medium text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                        >
+                            Reset
+                        </button>
+                    )}
                 </form>
 
                 {/* Table */}
-                <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-white shadow-sm dark:border-sidebar-border">
+                <div className="overflow-hidden rounded-sm border border-sidebar-border/70 bg-white shadow-sm dark:border-sidebar-border">
 
                     <table className="min-w-full divide-y divide-gray-200">
 
@@ -138,6 +165,10 @@ export default function Index({ partyTypes, filters }: Props) {
 
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                                     Status
+                                </th>
+
+                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                    Created
                                 </th>
 
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
@@ -193,12 +224,31 @@ export default function Index({ partyTypes, filters }: Props) {
                                         </span>
                                     </td>
 
+                                    {/* Created */}
+                                    <td className="px-4 py-3 text-sm text-gray-500">
+                                        {partyType.created_at
+                                            ? new Date(partyType.created_at).toLocaleString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })
+                                            : '—'}
+                                    </td>
+
                                     {/* Updated */}
                                     <td className="px-4 py-3 text-sm text-gray-500">
                                         {partyType.updated_at
                                             ? new Date(
-                                                  partyType.updated_at
-                                              ).toLocaleDateString()
+                                                partyType.updated_at
+                                            ).toLocaleString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })
                                             : '—'}
                                     </td>
 
@@ -210,8 +260,11 @@ export default function Index({ partyTypes, filters }: Props) {
                                                     partyType.partyTypeId
                                                 ).url
                                             }
-                                            className="font-medium text-white 
-                                            rounded bg-yellow-500 px-3 py-1 cursor-pointer hover:bg-yellow-600"
+                                            className="inline-flex items-center gap-1.5 rounded-md bg-yellow-500 px-3.5 py-1.5 
+                                            text-sm font-medium text-white shadow-sm transition-colors duration-150 
+                                            hover:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 
+                                            focus:ring-yellow-500 focus:ring-offset-2 disabled:cursor-not-allowed 
+                                            disabled:opacity-50 cursor-pointer"
                                         >
                                             Edit
                                         </Link>
@@ -221,8 +274,11 @@ export default function Index({ partyTypes, filters }: Props) {
                                             onClick={() =>
                                                 handleDelete(partyType)
                                             }
-                                            className="ml-4 font-medium text-white 
-                                            rounded bg-red-500 px-3 py-1 cursor-pointer hover:bg-red-600"
+                                            className="ml-4 inline-flex items-center gap-1.5 rounded-md bg-red-500 px-3.5 py-1.5 
+                                            text-sm font-medium text-white shadow-sm transition-colors duration-150 
+                                            hover:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 
+                                            focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed 
+                                            disabled:opacity-50 cursor-pointer"
                                         >
                                             Delete
                                         </button>
@@ -235,7 +291,7 @@ export default function Index({ partyTypes, filters }: Props) {
 
                 {/* Pagination */}
                 {partyTypes.links.length > 3 && (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 justify-end">
                         {partyTypes.links.map((link, i) => (
                             <Link
                                 key={i}
@@ -244,7 +300,7 @@ export default function Index({ partyTypes, filters }: Props) {
                                     __html: link.label,
                                 }}
                                 className={
-                                    'rounded-md px-3 py-1.5 text-sm ' +
+                                    'rounded-sm px-3 py-1.5 text-sm ' +
                                     (
                                         link.active
                                             ? 'bg-indigo-600 text-white'

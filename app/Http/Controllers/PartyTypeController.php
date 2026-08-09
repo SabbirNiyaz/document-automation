@@ -36,7 +36,8 @@ class PartyTypeController extends Controller
     {
         PartyType::create($request->validated());
 
-        return redirect()->route('party-types.index')->with('success', 'Party type created.');
+        return redirect()->route('party-types.index')
+            ->with('success', 'Party type created.');
     }
 
     public function edit(PartyType $party_type): Response
@@ -48,13 +49,15 @@ class PartyTypeController extends Controller
     {
         $party_type->update($request->validated());
 
-        return redirect()->route('party-types.index')->with('success', 'Party type updated.');
+        return redirect()->route('party-types.index')
+            ->with('success', 'Party type updated.');
     }
 
     public function destroy(PartyType $party_type): RedirectResponse
     {
         $party_type->delete(); // soft delete — sets deleted_at
 
-        return redirect()->route('party-types.index')->with('success', 'Party type deleted.');
+        return redirect()->route('party-types.index')
+            ->with('success', 'Party type deleted.');
     }
 }
