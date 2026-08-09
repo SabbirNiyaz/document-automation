@@ -1,0 +1,146 @@
+import { FormEvent } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import PartyTypeController from '@/actions/App/Http/Controllers/PartyTypeController';
+
+export default function Create() {
+    const { data, setData, post, processing, errors } = useForm({
+        partyTypeName: '',
+        status: 'Active' as 'Active' | 'Inactive',
+    });
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+
+        post(PartyTypeController.store().url);
+    }
+
+    return (
+        <>
+            <Head title="New Party Type" />
+
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <div className="mx-auto w-full max-w-xl">
+
+                    {/* Page Header */}
+                    <div>
+                        <h1 className="text-xl font-semibold text-gray-900">
+                            New Party Type
+                        </h1>
+
+                        <p className="mt-1 text-sm text-gray-500">
+                            Create a new party type.
+                        </p>
+                    </div>
+
+                    {/* Form */}
+                    <form
+                        onSubmit={submit}
+                        className="mt-6 space-y-5 rounded-xl border border-sidebar-border/70 bg-white p-6 shadow-sm dark:border-sidebar-border"
+                    >
+                        {/* Party Type Name */}
+                        <div>
+                            <label
+                                htmlFor="partyTypeName"
+                                className="block text-sm font-medium text-gray-700"
+                            >
+                                Name
+                            </label>
+
+                            <input
+                                id="partyTypeName"
+                                type="text"
+                                value={data.partyTypeName}
+                                onChange={(e) =>
+                                    setData(
+                                        'partyTypeName',
+                                        e.target.value
+                                    )
+                                }
+                                placeholder="Enter party type name"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                autoFocus
+                            />
+
+                            {errors.partyTypeName && (
+                                <p className="mt-1 text-sm text-red-600">
+                                    {errors.partyTypeName}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Status */}
+                        <div>
+                            <label
+                                htmlFor="status"
+                                className="block text-sm font-medium text-gray-700"
+                            >
+                                Status
+                            </label>
+
+                            <select
+                                id="status"
+                                value={data.status}
+                                onChange={(e) =>
+                                    setData(
+                                        'status',
+                                        e.target.value as
+                                            | 'Active'
+                                            | 'Inactive'
+                                    )
+                                }
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            >
+                                <option value="Active">
+                                    Active
+                                </option>
+
+                                <option value="Inactive">
+                                    Inactive
+                                </option>
+                            </select>
+
+                            {errors.status && (
+                                <p className="mt-1 text-sm text-red-600">
+                                    {errors.status}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="flex items-center justify-end gap-3 pt-2">
+                            <Link
+                                href={PartyTypeController.index().url}
+                                className="text-sm font-medium text-gray-600 hover:text-gray-800"
+                            >
+                                Cancel
+                            </Link>
+
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {processing
+                                    ? 'Saving...'
+                                    : 'Save'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </>
+    );
+}
+
+Create.layout = {
+    breadcrumbs: [
+        {
+            title: 'Party Types',
+            href: PartyTypeController.index().url,
+        },
+        {
+            title: 'New',
+            href: PartyTypeController.create().url,
+        },
+    ],
+};
