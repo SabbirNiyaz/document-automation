@@ -27,6 +27,14 @@ const mainNavItems: NavItem[] = [
         href: DocumentController.index().url,
     },
     {
+        title: 'Date Details',
+        href: DateDetailController.index().url,
+    },
+    {
+        title: 'Party Masters',
+        href: PartyMasterController.index().url,
+    },
+    {
         title: 'Document Types',
         href: DocumentTypeController.index().url,
     },
@@ -35,17 +43,10 @@ const mainNavItems: NavItem[] = [
         href: DateTypeController.index().url,
     },
     {
-        title: 'Date Details',
-        href: DateDetailController.index().url,
-    },
-    {
         title: 'Party Types',
         href: PartyTypeController.index().url,
     },
-    {
-        title: 'Party Masters',
-        href: PartyMasterController.index().url,
-    },
+
 ];
 
 export function AppSidebar() {
