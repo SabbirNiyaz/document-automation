@@ -12,6 +12,7 @@ import {
 } from '@inertiajs/react';
 
 import DocumentTypeController from '@/actions/App/Http/Controllers/DocumentTypeController';
+import { Info as InfoIcon, Pencil, Trash2, X } from 'lucide-react';
 
 interface User {
     id: number;
@@ -311,11 +312,13 @@ export default function Index({
                                         <button
                                             type="button"
                                             onClick={() => openInfo(documentType)}
-                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-gray-500 px-3.5 py-1.5
-                                            text-sm font-medium text-white shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 
+                                            title="Info"
+                                            aria-label="Info"
+                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-gray-500 p-2
+                                            text-white shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 
                                             focus:ring-gray-500 focus:ring-offset-2 cursor-pointer"
                                         >
-                                            Info
+                                            <InfoIcon className="h-4 w-4" />
                                         </button>
 
                                         <Link
@@ -324,9 +327,11 @@ export default function Index({
                                                     documentType.document_id
                                                 ).url
                                             }
-                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-yellow-500 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-yellow-600"
+                                            title="Edit"
+                                            aria-label="Edit"
+                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-yellow-500 p-2 text-white shadow-sm hover:bg-yellow-600"
                                         >
-                                            Edit
+                                            <Pencil className="h-4 w-4" />
                                         </Link>
 
                                         <button
@@ -336,9 +341,11 @@ export default function Index({
                                                     documentType
                                                 )
                                             }
-                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-red-500 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-red-600"
+                                            title="Delete"
+                                            aria-label="Delete"
+                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-red-500 p-2 text-white shadow-sm hover:bg-red-600"
                                         >
-                                            Delete
+                                            <Trash2 className="h-4 w-4" />
                                         </button>
 
                                     </div>
@@ -422,10 +429,12 @@ export default function Index({
                                                 <button
                                                     type="button"
                                                     onClick={() => openInfo(documentType)}
-                                                    className="inline-flex items-center rounded-md bg-gray-400 px-3.5 py-1.5 text-sm font-medium 
+                                                    title="Info"
+                                                    aria-label="Info"
+                                                    className="inline-flex items-center justify-center rounded-md bg-gray-400 p-2 
                                                     text-white hover:bg-gray-500 cursor-pointer"
                                                 >
-                                                    Info
+                                                    <InfoIcon className="h-4 w-4" />
                                                 </button>
 
                                                 <Link
@@ -434,10 +443,11 @@ export default function Index({
                                                             documentType.document_id
                                                         ).url
                                                     }
-                                                    className="ml-4 inline-flex items-center rounded-md bg-yellow-500 px-3.5 
-                                                    py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
+                                                    title="Edit"
+                                                    aria-label="Edit"
+                                                    className="ml-4 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600"
                                                 >
-                                                    Edit
+                                                    <Pencil className="h-4 w-4" />
                                                 </Link>
 
                                                 <button
@@ -447,10 +457,11 @@ export default function Index({
                                                             documentType
                                                         )
                                                     }
-                                                    className="ml-4 inline-flex items-center rounded-md bg-red-500 px-3.5 py-1.5 text-sm 
-                                                    font-medium text-white hover:bg-red-600 cursor-pointer"
+                                                    title="Delete"
+                                                    aria-label="Delete"
+                                                    className="ml-4 inline-flex items-center justify-center rounded-md bg-red-500 p-2 text-white hover:bg-red-600 cursor-pointer"
                                                 >
-                                                    Delete
+                                                    <Trash2 className="h-4 w-4" />
                                                 </button>
 
                                             </td>
@@ -526,20 +537,7 @@ export default function Index({
                                 focus:ring-indigo-500 cursor-pointer"
                                 aria-label="Close"
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
+                                <X className="h-5 w-5" />
                             </button>
                         </div>
 

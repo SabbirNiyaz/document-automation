@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import DocumentController from '@/actions/App/Http/Controllers/DocumentController';
+import { Info as InfoIcon, Pencil, Trash2, FileText, X } from 'lucide-react';
 
 interface User {
     id: number;
@@ -105,7 +106,18 @@ export default function Index({
         });
     }
 
-    // Close modal on Escape key
+    // Info modal state
+    const [infoDocument, setInfoDocument] = useState<DocumentItem | null>(null);
+
+    function openInfo(document: DocumentItem) {
+        setInfoDocument(document);
+    }
+
+    function closeInfo() {
+        setInfoDocument(null);
+    }
+
+    // Close PDF modal on Escape key
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') {
@@ -121,17 +133,6 @@ export default function Index({
             document.removeEventListener('keydown', handleKeyDown);
         };
     }, [pdfModal.open]);
-
-    // Info modal state
-    const [infoDocument, setInfoDocument] = useState<DocumentItem | null>(null);
-
-    function openInfo(document: DocumentItem) {
-        setInfoDocument(document);
-    }
-
-    function closeInfo() {
-        setInfoDocument(null);
-    }
 
     // Close info modal on Escape key
     useEffect(() => {
@@ -492,13 +493,12 @@ export default function Index({
 
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                openInfo(document)
-                                            }
-                                            className="rounded-md bg-gray-500 px-3 py-1.5 text-sm 
-                                            font-medium text-white hover:bg-gray-600 cursor-pointer"
+                                            onClick={() => openInfo(document)}
+                                            title="Info"
+                                            aria-label="Info"
+                                            className="inline-flex items-center justify-center rounded-md bg-gray-500 p-2 text-white hover:bg-gray-600 cursor-pointer"
                                         >
-                                            Info
+                                            <InfoIcon className="h-4 w-4" />
                                         </button>
 
                                         {document.attachment ? (
@@ -508,10 +508,11 @@ export default function Index({
                                                 onClick={() =>
                                                     openPdfModal(document)
                                                 }
-                                                className="rounded-md bg-blue-500 px-3 py-1.5 text-sm 
-                                                font-medium text-white hover:bg-blue-600 cursor-pointer"
+                                                title="View PDF"
+                                                aria-label="View PDF"
+                                                className="inline-flex items-center justify-center rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600 cursor-pointer"
                                             >
-                                                View PDF
+                                                <FileText className="h-4 w-4" />
                                             </button>
 
                                         ) : (
@@ -528,9 +529,11 @@ export default function Index({
                                                     document.docId
                                                 ).url
                                             }
-                                            className="rounded-md bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 cursor-pointer"
+                                            title="Edit"
+                                            aria-label="Edit"
+                                            className="inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600"
                                         >
-                                            Edit
+                                            <Pencil className="h-4 w-4" />
                                         </Link>
 
                                         <button
@@ -540,9 +543,11 @@ export default function Index({
                                                     document
                                                 )
                                             }
-                                            className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-600 cursor-pointer"
+                                            title="Delete"
+                                            aria-label="Delete"
+                                            className="inline-flex items-center justify-center rounded-md bg-red-500 p-2 text-white hover:bg-red-600 cursor-pointer"
                                         >
-                                            Delete
+                                            <Trash2 className="h-4 w-4" />
                                         </button>
 
                                     </div>
@@ -701,11 +706,11 @@ export default function Index({
                                                         onClick={() =>
                                                             openPdfModal(document)
                                                         }
-                                                        className="inline-flex rounded-md bg-blue-500 px-3 
-                                                        py-1.5 text-xs font-medium text-white 
-                                                        hover:bg-blue-600 cursor-pointer"
+                                                        title="View PDF"
+                                                        aria-label="View PDF"
+                                                        className="inline-flex items-center justify-center rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600 cursor-pointer"
                                                     >
-                                                        View PDF
+                                                        <FileText className="h-4 w-4" />
                                                     </button>
 
                                                 ) : (
@@ -722,13 +727,12 @@ export default function Index({
 
                                                 <button
                                                     type="button"
-                                                    onClick={() =>
-                                                        openInfo(document)
-                                                    }
-                                                    className="inline-flex rounded-md bg-gray-400 px-3.5 py-1.5 text-sm 
-                                                    font-medium text-white hover:bg-gray-500 cursor-pointer"
+                                                    onClick={() => openInfo(document)}
+                                                    title="Info"
+                                                    aria-label="Info"
+                                                    className="inline-flex items-center justify-center rounded-md bg-gray-400 p-2 text-white hover:bg-gray-500 cursor-pointer"
                                                 >
-                                                    Info
+                                                    <InfoIcon className="h-4 w-4" />
                                                 </button>
 
                                                 <Link
@@ -737,9 +741,11 @@ export default function Index({
                                                             document.docId
                                                         ).url
                                                     }
-                                                    className="ml-3 inline-flex rounded-md bg-yellow-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 cursor-pointer"
+                                                    title="Edit"
+                                                    aria-label="Edit"
+                                                    className="ml-3 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600"
                                                 >
-                                                    Edit
+                                                    <Pencil className="h-4 w-4" />
                                                 </Link>
 
                                                 <button
@@ -749,9 +755,11 @@ export default function Index({
                                                             document
                                                         )
                                                     }
-                                                    className="ml-3 inline-flex rounded-md bg-red-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-red-600 cursor-pointer"
+                                                    title="Delete"
+                                                    aria-label="Delete"
+                                                    className="ml-3 inline-flex items-center justify-center rounded-md bg-red-500 p-2 text-white hover:bg-red-600 cursor-pointer"
                                                 >
-                                                    Delete
+                                                    <Trash2 className="h-4 w-4" />
                                                 </button>
 
                                             </td>
@@ -820,7 +828,7 @@ export default function Index({
                     >
 
                         <div
-                            className="flex h-[95vh] w-full max-w-6xl flex-col rounded-sm bg-white shadow-xl"
+                            className="flex h-[90vh] w-full max-w-4xl flex-col rounded-sm bg-white shadow-xl"
                             onClick={(e) => e.stopPropagation()}
                         >
 
@@ -833,11 +841,10 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closePdfModal}
-                                    className="rounded-md p-1 text-gray-500 hover:bg-gray-100 
-                                    hover:text-gray-700 cursor-pointer"
+                                    className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
                                     aria-label="Close"
                                 >
-                                    ✕
+                                    <X className="h-4 w-4" />
                                 </button>
 
                             </div>
@@ -894,25 +901,10 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closeInfo}
-                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
-                                    hover:text-gray-600 focus:outline-none focus:ring-2 
-                                    focus:ring-indigo-500 cursor-pointer"
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                                     aria-label="Close"
                                 >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-5 w-5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M6 18L18 6M6 6l12 12"
-                                        />
-                                    </svg>
+                                    <X className="h-5 w-5" />
                                 </button>
 
                             </div>
@@ -923,7 +915,6 @@ export default function Index({
                                     <dt className="text-xs uppercase tracking-wide text-gray-400">
                                         Created
                                     </dt>
-
                                     <dd className="mt-0.5 text-gray-700">
                                         {formatDate(infoDocument.created_at)}
                                     </dd>
@@ -933,7 +924,6 @@ export default function Index({
                                     <dt className="text-xs uppercase tracking-wide text-gray-400">
                                         Created By
                                     </dt>
-
                                     <dd className="mt-0.5 text-gray-700">
                                         {infoDocument.created_by
                                             ? `${infoDocument.created_by.name} (ID: ${infoDocument.created_by.id})`
@@ -945,7 +935,6 @@ export default function Index({
                                     <dt className="text-xs uppercase tracking-wide text-gray-400">
                                         Updated
                                     </dt>
-
                                     <dd className="mt-0.5 text-gray-700">
                                         {formatDate(infoDocument.updated_at)}
                                     </dd>
@@ -955,7 +944,6 @@ export default function Index({
                                     <dt className="text-xs uppercase tracking-wide text-gray-400">
                                         Updated By
                                     </dt>
-
                                     <dd className="mt-0.5 text-gray-700">
                                         {infoDocument.updated_by
                                             ? `${infoDocument.updated_by.name} (ID: ${infoDocument.updated_by.id})`
@@ -969,9 +957,7 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closeInfo}
-                                    className="inline-flex items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm 
-                                    font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 
-                                    focus:ring-offset-2 cursor-pointer"
+                                    className="inline-flex items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 cursor-pointer"
                                 >
                                     Close
                                 </button>
