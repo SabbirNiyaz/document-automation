@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import DocumentController from '@/actions/App/Http/Controllers/DocumentController';
-import { Info as InfoIcon, Pencil, Trash2, FileText, X } from 'lucide-react';
+import { Info as InfoIcon, Pencil, Trash2, FileText, Calendar, X } from 'lucide-react';
 
 interface User {
     id: number;
@@ -18,28 +18,28 @@ interface DocumentType {
     document_name: string;
 }
 
+interface DateDetailItem {
+    id: number;
+    dateTypeName: string | null;
+    date_value: string | null;
+    status: 'Active' | 'Inactive';
+}
+
 interface DocumentItem {
     docId: number;
     title: string;
     description: string | null;
-
     partyName: Party | null;
-
     docType: DocumentType | null;
-
     date: string;
-
     soft_copy: string | null;
-
     status: 'Active' | 'Inactive';
-
     attachment: string | null;
-
     created_at: string | null;
     updated_at: string | null;
-
     created_by: User | null;
     updated_by: User | null;
+    dateDetails: DateDetailItem[];
 }
 
 interface PaginationLink {
@@ -65,7 +65,6 @@ export default function Index({
     documents,
     filters,
 }: Props) {
-
     const [search, setSearch] = useState(
         filters?.search ?? ''
     );
@@ -117,6 +116,33 @@ export default function Index({
         setInfoDocument(null);
     }
 
+    // Date modal state
+    const [dateModal, setDateModal] = useState<{
+        open: boolean;
+        title: string;
+        dateDetails: DateDetailItem[];
+    }>({
+        open: false,
+        title: '',
+        dateDetails: [],
+    });
+
+    function openDateModal(document: DocumentItem) {
+        setDateModal({
+            open: true,
+            title: document.title,
+            dateDetails: document.dateDetails ?? [],
+        });
+    }
+
+    function closeDateModal() {
+        setDateModal({
+            open: false,
+            title: '',
+            dateDetails: [],
+        });
+    }
+
     // Close PDF modal on Escape key
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
@@ -145,13 +171,29 @@ export default function Index({
         }
 
         document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
+
+        return () =>
+            document.removeEventListener('keydown', handleKeyDown);
     }, [infoDocument]);
 
+    // Close date modal on Escape key
     useEffect(() => {
+        if (!dateModal.open) return;
 
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                closeDateModal();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () =>
+            document.removeEventListener('keydown', handleKeyDown);
+    }, [dateModal.open]);
+
+    useEffect(() => {
         if (flash?.success) {
-
             setShowSuccess(true);
 
             const timer = setTimeout(
@@ -162,13 +204,11 @@ export default function Index({
             return () =>
                 clearTimeout(timer);
         }
-
     }, [flash?.success]);
 
     function handleSearch(
         e: FormEvent
     ) {
-
         e.preventDefault();
 
         router.get(
@@ -184,7 +224,6 @@ export default function Index({
     }
 
     function handleReset() {
-
         setSearch('');
 
         router.get(
@@ -200,7 +239,6 @@ export default function Index({
     function handleDelete(
         document: DocumentItem
     ) {
-
         if (
             !confirm(
                 `Are you sure you want to delete "${document.title}"?`
@@ -219,7 +257,6 @@ export default function Index({
     function formatDate(
         value: string | null
     ) {
-
         if (!value) {
             return '—';
         }
@@ -239,7 +276,6 @@ export default function Index({
     function formatDocumentDate(
         value: string
     ) {
-
         if (!value) {
             return '—';
         }
@@ -331,17 +367,17 @@ export default function Index({
                         {(search ||
                             filters?.search) && (
 
-                            <button
-                                type="button"
-                                onClick={
-                                    handleReset
-                                }
-                                className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 sm:flex-none"
-                            >
-                                Reset
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={
+                                        handleReset
+                                    }
+                                    className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 sm:flex-none"
+                                >
+                                    Reset
+                                </button>
 
-                        )}
+                            )}
 
                     </div>
 
@@ -396,7 +432,7 @@ export default function Index({
                                                 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
                                                 (
                                                     document.status ===
-                                                    'Active'
+                                                        'Active'
                                                         ? 'bg-green-100 text-green-800'
                                                         : 'bg-gray-300 text-gray-600'
                                                 )
@@ -523,6 +559,16 @@ export default function Index({
 
                                         )}
 
+                                        <button
+                                            type="button"
+                                            onClick={() => openDateModal(document)}
+                                            title="View Dates"
+                                            aria-label="View Dates"
+                                            className="inline-flex items-center justify-center rounded-md bg-purple-500 p-2 text-white hover:bg-purple-600 cursor-pointer"
+                                        >
+                                            <Calendar className="h-4 w-4" />
+                                        </button>
+
                                         <Link
                                             href={
                                                 DocumentController.edit(
@@ -609,6 +655,10 @@ export default function Index({
                                         Attachment
                                     </th>
 
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                                        Date Details
+                                    </th>
+
                                     <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">
                                         Actions
                                     </th>
@@ -684,7 +734,7 @@ export default function Index({
                                                         'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
                                                         (
                                                             document.status ===
-                                                            'Active'
+                                                                'Active'
                                                                 ? 'bg-green-100 text-green-800'
                                                                 : 'bg-gray-300 text-gray-600'
                                                         )
@@ -721,6 +771,18 @@ export default function Index({
 
                                                 )}
 
+                                            </td>
+
+                                            <td className="px-4 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openDateModal(document)}
+                                                    title="View Dates"
+                                                    aria-label="View Dates"
+                                                    className="ml-3 inline-flex items-center justify-center rounded-md bg-purple-500 p-2 text-white hover:bg-purple-600 cursor-pointer"
+                                                >
+                                                    <Calendar className="h-4 w-4" />
+                                                </button>
                                             </td>
 
                                             <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -841,8 +903,7 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closePdfModal}
-                                    className="rounded-md p-1 text-gray-500 hover:bg-gray-100 
-                                    hover:text-gray-700 cursor-pointer"
+                                    className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 cursor-pointer"
                                     aria-label="Close"
                                 >
                                     <X className="h-4 w-4" />
@@ -869,6 +930,112 @@ export default function Index({
 
                     </div>
 
+                )}
+
+                {/* Date Details Modal */}
+
+                {dateModal.open && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeDateModal}
+                    >
+                        <div
+                            className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Date Details
+                                    </h2>
+
+                                    <p className="mt-0.5 text-sm text-gray-500">
+                                        {dateModal.title}
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeDateModal}
+                                    className="cursor-pointer rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div className="mt-4 border-t border-gray-100 pt-4">
+                                {dateModal.dateDetails.length === 0 ? (
+                                    <p className="text-sm text-gray-500">
+                                        No date details for this document.
+                                    </p>
+                                ) : (
+                                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th className="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                                                    Date Type
+                                                </th>
+
+                                                <th className="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                                                    Date
+                                                </th>
+
+                                                <th className="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                                                    Status
+                                                </th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody className="divide-y divide-gray-100">
+                                            {dateModal.dateDetails.map((detail) => (
+                                                <tr key={detail.id}>
+                                                    <td className="py-2 pr-2 text-gray-700">
+                                                        {detail.dateTypeName ?? '—'}
+                                                    </td>
+
+                                                    <td className="py-2 pr-2 text-gray-700">
+                                                        {detail.date_value
+                                                            ? new Date(
+                                                                `${detail.date_value}T00:00:00`
+                                                            ).toLocaleDateString('en-US', {
+                                                                year: 'numeric',
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                            })
+                                                            : '—'}
+                                                    </td>
+
+                                                    <td className="py-2">
+                                                        <span
+                                                            className={
+                                                                'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
+                                                                (detail.status === 'Active'
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : 'bg-gray-300 text-gray-600')
+                                                            }
+                                                        >
+                                                            {detail.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+
+                            <div className="mt-5 flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={closeDateModal}
+                                    className="inline-flex cursor-pointer items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
                 {/* Info Modal */}
@@ -902,9 +1069,7 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closeInfo}
-                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
-                                    hover:text-gray-600 focus:outline-none focus:ring-2 
-                                    focus:ring-indigo-500 cursor-pointer"
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                                     aria-label="Close"
                                 >
                                     <X className="h-5 w-5" />
@@ -918,6 +1083,7 @@ export default function Index({
                                     <dt className="text-xs uppercase tracking-wide text-gray-400">
                                         Created
                                     </dt>
+
                                     <dd className="mt-0.5 text-gray-700">
                                         {formatDate(infoDocument.created_at)}
                                     </dd>
@@ -927,6 +1093,7 @@ export default function Index({
                                     <dt className="text-xs uppercase tracking-wide text-gray-400">
                                         Created By
                                     </dt>
+
                                     <dd className="mt-0.5 text-gray-700">
                                         {infoDocument.created_by
                                             ? `${infoDocument.created_by.name} (ID: ${infoDocument.created_by.id})`
@@ -938,6 +1105,7 @@ export default function Index({
                                     <dt className="text-xs uppercase tracking-wide text-gray-400">
                                         Updated
                                     </dt>
+
                                     <dd className="mt-0.5 text-gray-700">
                                         {formatDate(infoDocument.updated_at)}
                                     </dd>
@@ -947,6 +1115,7 @@ export default function Index({
                                     <dt className="text-xs uppercase tracking-wide text-gray-400">
                                         Updated By
                                     </dt>
+
                                     <dd className="mt-0.5 text-gray-700">
                                         {infoDocument.updated_by
                                             ? `${infoDocument.updated_by.name} (ID: ${infoDocument.updated_by.id})`

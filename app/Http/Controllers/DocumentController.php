@@ -26,23 +26,17 @@ class DocumentController extends Controller
             'documentType:document_id,document_name',
             'createdBy:id,name',
             'updatedBy:id,name',
+            'dateDetails' => function ($query) {
+                $query->with('dateType:dateTypeId,dateTypeName')
+                    ->orderBy('date_value');
+            },
         ])
             ->when(
                 $search,
                 function ($query) use ($search) {
                     $query->where(function ($q) use ($search) {
-
-                        $q->where(
-                            'title',
-                            'like',
-                            "%{$search}%"
-                        )
-
-                        ->orWhere(
-                            'description',
-                            'like',
-                            "%{$search}%"
-                        );
+                        $q->where('title', 'like', "%{$search}%")
+                            ->orWhere('description', 'like', "%{$search}%");
                     });
                 }
             )
@@ -52,58 +46,37 @@ class DocumentController extends Controller
 
         $documents->through(
             function (Document $document) {
-
                 return [
                     'docId' => $document->docId,
-
                     'title' => $document->title,
+                    'description' => $document->description,
+                    'partyName' => $document->party,
+                    'docType' => $document->documentType,
+                    'date' => $document->date?->format('Y-m-d'),
+                    'soft_copy' => $document->soft_copy,
+                    'status' => $document->status,
+                    'attachment' => $document->attachment,
+                    'created_at' => $document->created_at,
+                    'created_by' => $document->createdBy,
+                    'updated_at' => $document->updated_at,
+                    'updated_by' => $document->updatedBy,
 
-                    'description' =>
-                        $document->description,
-
-                    'partyName' =>
-                        $document->party,
-
-                    'docType' =>
-                        $document->documentType,
-
-                    'date' =>
-                        $document->date?->format('Y-m-d'),
-
-                    'soft_copy' =>
-                        $document->soft_copy,
-
-                    'status' =>
-                        $document->status,
-
-                    'attachment' =>
-                        $document->attachment,
-
-                    'created_at' =>
-                        $document->created_at,
-
-                    'created_by' =>
-                        $document->createdBy,
-
-                    'updated_at' =>
-                        $document->updated_at,
-
-                    'updated_by' =>
-                        $document->updatedBy,
+                    'dateDetails' => $document->dateDetails->map(
+                        fn ($detail) => [
+                            'id' => $detail->id,
+                            'dateTypeName' => $detail->dateType?->dateTypeName,
+                            'date_value' => $detail->date_value?->format('Y-m-d'),
+                            'status' => $detail->status,
+                        ]
+                    ),
                 ];
             }
         );
 
-        return Inertia::render(
-            'Documents/Index',
-            [
-                'documents' => $documents,
-
-                'filters' => [
-                    'search' => $search,
-                ],
-            ]
-        );
+        return Inertia::render('Documents/Index', [
+            'documents' => $documents,
+            'filters' => ['search' => $search],
+        ]);
     }
 
     /**
