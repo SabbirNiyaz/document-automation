@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PartyType extends Model
@@ -21,6 +23,22 @@ class PartyType extends Model
     public function getRouteKeyName(): string
     {
         return 'partyTypeId';
+    }
+
+    /**
+     * User who created this record.
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * User who last modified this record.
+     */
+    public function modifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'modified_by');
     }
 
     protected static function booted(): void

@@ -1,83 +1,83 @@
 import { FormEvent } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import PartyTypeController from '@/actions/App/Http/Controllers/PartyTypeController';
+import DateTypeController from '@/actions/App/Http/Controllers/DateTypeController';
 
-interface PartyType {
-    partyTypeId: number;
-    partyTypeName: string;
-    status: 'Active' | 'Inactive';
-}
-
-interface Props {
-    partyType: PartyType;
-}
-
-export default function Edit({ partyType }: Props) {
-    const { data, setData, put, processing, errors } = useForm({
-        partyTypeName: partyType.partyTypeName,
-        status: partyType.status,
+export default function Create() {
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+    } = useForm({
+        dateTypeName: '',
+        status: 'Active' as 'Active' | 'Inactive',
     });
 
     function submit(e: FormEvent) {
         e.preventDefault();
 
-        put(
-            PartyTypeController.update(
-                partyType.partyTypeId
-            ).url
+        post(
+            DateTypeController.store().url
         );
     }
 
     return (
         <>
-            <Head title="Edit Party Type" />
+            <Head title="New Date Type" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-sm p-4">
+
                 <div className="mx-auto w-full max-w-xl">
 
-                    {/* Page Header */}
+                    {/* Header */}
                     <div>
                         <h1 className="text-xl font-semibold text-gray-900">
-                            Edit Party Type
+                            New Date Type
                         </h1>
 
                         <p className="mt-1 text-sm text-gray-500">
-                            Update the party type information.
+                            Create a new date type.
                         </p>
                     </div>
 
                     {/* Form */}
                     <form
                         onSubmit={submit}
-                        className="mt-6 space-y-5 rounded-sm border border-sidebar-border/70 bg-white p-6 shadow-sm dark:border-sidebar-border"
+                        className="mt-6 space-y-5 rounded-sm border border-sidebar-border/70 bg-white p-6 shadow-sm"
                     >
-                        {/* Party Type Name */}
+
+                        {/* Name */}
                         <div>
                             <label
-                                htmlFor="partyTypeName"
+                                htmlFor="dateTypeName"
                                 className="block text-sm font-medium text-gray-700"
                             >
                                 Name
                             </label>
 
                             <input
-                                id="partyTypeName"
+                                id="dateTypeName"
                                 type="text"
-                                value={data.partyTypeName}
+                                value={
+                                    data.dateTypeName
+                                }
                                 onChange={(e) =>
                                     setData(
-                                        'partyTypeName',
+                                        'dateTypeName',
                                         e.target.value
                                     )
                                 }
-                                className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
-                                px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                placeholder="Enter date type name"
+                                className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 autoFocus
                             />
 
-                            {errors.partyTypeName && (
+                            {errors.dateTypeName && (
                                 <p className="mt-1 text-sm text-red-600">
-                                    {errors.partyTypeName}
+                                    {
+                                        errors.dateTypeName
+                                    }
                                 </p>
                             )}
                         </div>
@@ -97,13 +97,13 @@ export default function Edit({ partyType }: Props) {
                                 onChange={(e) =>
                                     setData(
                                         'status',
-                                        e.target.value as
+                                        e.target
+                                            .value as
                                             | 'Active'
                                             | 'Inactive'
                                     )
                                 }
-                                className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
-                                px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
+                                className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
                                 <option value="Active">
                                     Active
@@ -123,8 +123,12 @@ export default function Edit({ partyType }: Props) {
 
                         {/* Buttons */}
                         <div className="flex items-center justify-end gap-3 pt-2">
+
                             <Link
-                                href={PartyTypeController.index().url}
+                                href={
+                                    DateTypeController.index()
+                                        .url
+                                }
                                 className="text-sm font-medium text-gray-600 hover:text-gray-800"
                             >
                                 Cancel
@@ -133,31 +137,31 @@ export default function Edit({ partyType }: Props) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
-                                shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500
-                                focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {processing
-                                    ? 'Updating...'
-                                    : 'Update'}
+                                    ? 'Saving...'
+                                    : 'Save'}
                             </button>
+
                         </div>
                     </form>
+
                 </div>
             </div>
         </>
     );
 }
 
-Edit.layout = {
+Create.layout = {
     breadcrumbs: [
         {
-            title: 'Party Types',
-            href: PartyTypeController.index().url,
+            title: 'Date Types',
+            href: DateTypeController.index().url,
         },
         {
-            title: 'Edit',
-            href: '#',
+            title: 'New',
+            href: DateTypeController.create().url,
         },
     ],
 };

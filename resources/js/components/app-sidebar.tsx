@@ -15,6 +15,7 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import PartyTypeController from '@/actions/App/Http/Controllers/PartyTypeController';
+import DateTypeController from '@/actions/App/Http/Controllers/DateTypeController';
 
 const mainNavItems: NavItem[] = [
     {
@@ -24,6 +25,10 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Party Types',
         href: PartyTypeController.index().url,
+    },
+    {
+        title: 'Date Types',
+        href: DateTypeController.index().url,
     },
 ];
 

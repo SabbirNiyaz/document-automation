@@ -15,15 +15,40 @@ class PartyTypeController extends Controller
     {
         $search = $request->string('search')->toString();
 
-        $partyTypes = PartyType::query()
-            ->when($search, fn ($q) => $q->where('partyTypeName', 'like', "%{$search}%"))
+        $partyTypes = PartyType::with([
+                'createdBy:id,name',
+                'modifiedBy:id,name',
+            ])
+            ->when(
+                $search,
+                fn ($q) => $q->where(
+                    'partyTypeName',
+                    'like',
+                    "%{$search}%"
+                )
+            )
             ->orderByDesc('partyTypeId')
             ->paginate(10)
             ->withQueryString();
 
+        // Map explicitly so the frontend's `created_by` / `updated_by`
+        // keys always receive { id, name } objects (or null), regardless
+        // of the underlying relation/column naming (modified_by vs updated_by).
+        $partyTypes->through(fn (PartyType $partyType) => [
+            'partyTypeId'   => $partyType->partyTypeId,
+            'partyTypeName' => $partyType->partyTypeName,
+            'status'        => $partyType->status,
+            'created_at'    => $partyType->created_at,
+            'updated_at'    => $partyType->updated_at,
+            'created_by'    => $partyType->createdBy,
+            'updated_by'    => $partyType->modifiedBy,
+        ]);
+
         return Inertia::render('PartyTypes/Index', [
             'partyTypes' => $partyTypes,
-            'filters' => ['search' => $search],
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 

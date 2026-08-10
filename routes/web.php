@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PartyTypeController;
+use App\Http\Controllers\DateTypeController;
 
 Route::inertia('/', 'welcome')->name('home');
 
@@ -11,6 +12,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Party Types Routes
     Route::resource('party-types', PartyTypeController::class)
         ->parameters(['party-types' => 'party_type'])
+        ->except(['show']);
+
+    // Date Types Routes
+    Route::resource('date-types', DateTypeController::class)
+        ->parameters(['date-types' => 'date_type'])
         ->except(['show']);
 });
 

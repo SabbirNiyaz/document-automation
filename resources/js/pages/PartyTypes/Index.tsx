@@ -2,12 +2,20 @@ import { useState, FormEvent, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import PartyTypeController from '@/actions/App/Http/Controllers/PartyTypeController';
 
+interface User {
+    id: number;
+    name: string;
+}
+
 interface PartyType {
     partyTypeId: number;
     partyTypeName: string;
     status: 'Active' | 'Inactive';
     created_at: string | null;
     updated_at: string | null;
+
+    created_by: User | null;
+    updated_by: User | null;
 }
 
 interface PaginationLink {
@@ -92,16 +100,28 @@ export default function Index({ partyTypes, filters }: Props) {
         );
     }
 
+    function formatDate(value: string | null) {
+        return value
+            ? new Date(value).toLocaleString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+              })
+            : '—';
+    }
+
     return (
         <>
             <Head title="Party Types" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-sm p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-hidden rounded-sm p-3 sm:p-4">
 
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-900">
+                        <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
                             Party Types
                         </h1>
 
@@ -112,14 +132,14 @@ export default function Index({ partyTypes, filters }: Props) {
 
                     <Link
                         href={PartyTypeController.create().url}
-                        className="inline-flex items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
                     >
                         Add Party Type
                     </Link>
                 </div>
 
                 {showSuccess && flash?.success && (
-                    <div className="rounded-sm bg-green-50 px-4 py-3 text-sm text-green-700 text-center shadow-sm">
+                    <div className="rounded-sm bg-green-50 px-4 py-3 text-center text-sm text-green-700 shadow-sm">
                         {flash.success}
                     </div>
                 )}
@@ -127,181 +147,292 @@ export default function Index({ partyTypes, filters }: Props) {
                 {/* Search */}
                 <form
                     onSubmit={handleSearch}
-                    className="flex gap-2"
+                    className="flex flex-col gap-2 sm:flex-row"
                 >
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search by name..."
-                        className="w-full max-w-xs rounded-sm border-gray-300 text-sm shadow-sm 
-                        px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                        className="w-full rounded-sm border-gray-300 text-sm shadow-sm 
+                        px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:max-w-xs"
                     />
 
-                    <button
-                        type="submit"
-                        className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
-                         font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer"
-                    >
-                        Search
-                    </button>
-                    {(search || filters?.search) && (
+                    <div className="flex gap-2">
                         <button
-                            type="button"
-                            onClick={handleReset}
-                            className="rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
-                             font-medium text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                            type="submit"
+                            className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
+                             font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer sm:flex-none"
                         >
-                            Reset
+                            Search
                         </button>
-                    )}
+                        {(search || filters?.search) && (
+                            <button
+                                type="button"
+                                onClick={handleReset}
+                                className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
+                                 font-medium text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer sm:flex-none"
+                            >
+                                Reset
+                            </button>
+                        )}
+                    </div>
                 </form>
 
-                {/* Table */}
-                <div className="overflow-hidden rounded-sm border border-sidebar-border/70 bg-white shadow-sm dark:border-sidebar-border">
+                {/* Empty state (shared) */}
+                {partyTypes.data.length === 0 && (
+                    <div className="rounded-sm border border-sidebar-border/70 bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm dark:border-sidebar-border">
+                        No party types found.
+                    </div>
+                )}
 
-                    <table className="min-w-full divide-y divide-gray-200">
+                {/* Mobile / tablet: card list (hidden on lg and up) */}
+                {partyTypes.data.length > 0 && (
+                    <div className="flex flex-col gap-3 lg:hidden">
+                        {partyTypes.data.map((partyType) => (
+                            <div
+                                key={partyType.partyTypeId}
+                                className="rounded-sm border border-sidebar-border/70 bg-white p-4 shadow-sm dark:border-sidebar-border"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-xs text-gray-400">
+                                            ID: {partyType.partyTypeId}
+                                        </p>
+                                        <p className="text-sm font-medium text-gray-900">
+                                            {partyType.partyTypeName}
+                                        </p>
+                                    </div>
 
-                        {/* Table Header */}
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    ID
-                                </th>
-
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    Name
-                                </th>
-
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    Status
-                                </th>
-
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    Created
-                                </th>
-
-                                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    Updated
-                                </th>
-
-                                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-
-                        {/* Table Body */}
-                        <tbody className="divide-y divide-gray-200">
-
-                            {partyTypes.data.length === 0 && (
-                                <tr>
-                                    <td
-                                        colSpan={5}
-                                        className="px-4 py-8 text-center text-sm text-gray-500"
+                                    <span
+                                        className={
+                                            'inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ' +
+                                            (
+                                                partyType.status === 'Active'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-gray-300 text-gray-600'
+                                            )
+                                        }
                                     >
-                                        No party types found.
-                                    </td>
+                                        {partyType.status}
+                                    </span>
+                                </div>
+
+                                <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 text-sm xs:grid-cols-2">
+                                    <div>
+                                        <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                            Created
+                                        </dt>
+                                        <dd className="text-gray-600 break-words">
+                                            {formatDate(partyType.created_at)}
+                                        </dd>
+                                    </div>
+
+                                    <div>
+                                        <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                            Created By
+                                        </dt>
+                                        <dd className="text-gray-600 break-words">
+                                            {partyType.created_by
+                                                ? `${partyType.created_by.name} (ID: ${partyType.created_by.id})`
+                                                : '—'}
+                                        </dd>
+                                    </div>
+
+                                    <div>
+                                        <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                            Updated
+                                        </dt>
+                                        <dd className="text-gray-600 break-words">
+                                            {formatDate(partyType.updated_at)}
+                                        </dd>
+                                    </div>
+
+                                    <div>
+                                        <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                            Updated By
+                                        </dt>
+                                        <dd className="text-gray-600 break-words">
+                                            {partyType.updated_by
+                                                ? `${partyType.updated_by.name} (ID: ${partyType.updated_by.id})`
+                                                : '—'}
+                                        </dd>
+                                    </div>
+                                </dl>
+
+                                <div className="mt-4 flex gap-3">
+                                    <Link
+                                        href={
+                                            PartyTypeController.edit(
+                                                partyType.partyTypeId
+                                            ).url
+                                        }
+                                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-yellow-500 px-3.5 py-1.5 
+                                        text-sm font-medium text-white shadow-sm transition-colors duration-150 
+                                        hover:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 
+                                        focus:ring-yellow-500 focus:ring-offset-2 disabled:cursor-not-allowed 
+                                        disabled:opacity-50 cursor-pointer"
+                                    >
+                                        Edit
+                                    </Link>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDelete(partyType)}
+                                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-red-500 px-3.5 py-1.5 
+                                        text-sm font-medium text-white shadow-sm transition-colors duration-150 
+                                        hover:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 
+                                        focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed 
+                                        disabled:opacity-50 cursor-pointer"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Desktop: table (lg and up only) */}
+                {partyTypes.data.length > 0 && (
+                    <div className="hidden overflow-x-auto rounded-sm border border-sidebar-border/70 bg-white shadow-sm dark:border-sidebar-border lg:block">
+
+                        <table className="min-w-full divide-y divide-gray-200">
+
+                            {/* Table Header */}
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        ID
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        Name
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        Status
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        Created
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        Created By
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        Updated
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        Updated By
+                                    </th>
+
+                                    <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        Actions
+                                    </th>
                                 </tr>
-                            )}
+                            </thead>
 
-                            {partyTypes.data.map((partyType) => (
-                                <tr key={partyType.partyTypeId}>
+                            {/* Table Body */}
+                            <tbody className="divide-y divide-gray-200">
 
-                                    {/* ID */}
-                                    <td className="px-4 py-3 text-sm text-gray-500">
-                                        {partyType.partyTypeId}
-                                    </td>
+                                {partyTypes.data.map((partyType) => (
+                                    <tr key={partyType.partyTypeId}>
 
-                                    {/* Name */}
-                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                        {partyType.partyTypeName}
-                                    </td>
+                                        {/* ID */}
+                                        <td className="px-4 py-3 text-sm text-gray-500">
+                                            {partyType.partyTypeId}
+                                        </td>
 
-                                    {/* Status */}
-                                    <td className="px-4 py-3 text-sm">
-                                        <span
-                                            className={
-                                                'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
-                                                (
-                                                    partyType.status === 'Active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-gray-300 text-gray-600'
-                                                )
-                                            }
-                                        >
-                                            {partyType.status}
-                                        </span>
-                                    </td>
+                                        {/* Name */}
+                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                            {partyType.partyTypeName}
+                                        </td>
 
-                                    {/* Created */}
-                                    <td className="px-4 py-3 text-sm text-gray-500">
-                                        {partyType.created_at
-                                            ? new Date(partyType.created_at).toLocaleString('en-US', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })
-                                            : '—'}
-                                    </td>
+                                        {/* Status */}
+                                        <td className="px-4 py-3 text-sm">
+                                            <span
+                                                className={
+                                                    'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
+                                                    (
+                                                        partyType.status === 'Active'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-gray-300 text-gray-600'
+                                                    )
+                                                }
+                                            >
+                                                {partyType.status}
+                                            </span>
+                                        </td>
 
-                                    {/* Updated */}
-                                    <td className="px-4 py-3 text-sm text-gray-500">
-                                        {partyType.updated_at
-                                            ? new Date(
-                                                partyType.updated_at
-                                            ).toLocaleString('en-US', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })
-                                            : '—'}
-                                    </td>
+                                        {/* Created */}
+                                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                                            {formatDate(partyType.created_at)}
+                                        </td>
 
-                                    {/* Actions */}
-                                    <td className="px-4 py-3 text-right text-sm">
-                                        <Link
-                                            href={
-                                                PartyTypeController.edit(
-                                                    partyType.partyTypeId
-                                                ).url
-                                            }
-                                            className="inline-flex items-center gap-1.5 rounded-md bg-yellow-500 px-3.5 py-1.5 
-                                            text-sm font-medium text-white shadow-sm transition-colors duration-150 
-                                            hover:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 
-                                            focus:ring-yellow-500 focus:ring-offset-2 disabled:cursor-not-allowed 
-                                            disabled:opacity-50 cursor-pointer"
-                                        >
-                                            Edit
-                                        </Link>
+                                        {/* Created By */}
+                                        <td className="px-4 py-3 text-sm text-gray-500">
+                                            {partyType.created_by
+                                                ? `${partyType.created_by.name} (ID: ${partyType.created_by.id})`
+                                                : '—'}
+                                        </td>
 
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                handleDelete(partyType)
-                                            }
-                                            className="ml-4 inline-flex items-center gap-1.5 rounded-md bg-red-500 px-3.5 py-1.5 
-                                            text-sm font-medium text-white shadow-sm transition-colors duration-150 
-                                            hover:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 
-                                            focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed 
-                                            disabled:opacity-50 cursor-pointer"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                        {/* Updated */}
+                                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                                            {formatDate(partyType.updated_at)}
+                                        </td>
+
+                                        {/* Updated By */}
+                                        <td className="px-4 py-3 text-sm text-gray-500">
+                                            {partyType.updated_by
+                                                ? `${partyType.updated_by.name} (ID: ${partyType.updated_by.id})`
+                                                : '—'}
+                                        </td>
+
+                                        {/* Actions */}
+                                        <td className="px-4 py-3 text-right text-sm whitespace-nowrap">
+                                            <Link
+                                                href={
+                                                    PartyTypeController.edit(
+                                                        partyType.partyTypeId
+                                                    ).url
+                                                }
+                                                className="inline-flex items-center gap-1.5 rounded-md bg-yellow-500 px-3.5 py-1.5 
+                                                text-sm font-medium text-white shadow-sm transition-colors duration-150 
+                                                hover:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 
+                                                focus:ring-yellow-500 focus:ring-offset-2 disabled:cursor-not-allowed 
+                                                disabled:opacity-50 cursor-pointer"
+                                            >
+                                                Edit
+                                            </Link>
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleDelete(partyType)
+                                                }
+                                                className="ml-4 inline-flex items-center gap-1.5 rounded-md bg-red-500 px-3.5 py-1.5 
+                                                text-sm font-medium text-white shadow-sm transition-colors duration-150 
+                                                hover:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 
+                                                focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed 
+                                                disabled:opacity-50 cursor-pointer"
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
                 {/* Pagination */}
                 {partyTypes.links.length > 3 && (
-                    <div className="flex flex-wrap gap-1 justify-end">
+                    <div className="flex flex-wrap justify-center gap-1 sm:justify-end">
                         {partyTypes.links.map((link, i) => (
                             <Link
                                 key={i}
