@@ -524,7 +524,9 @@ export default function Index({ partyMasters, filters }: Props) {
                             <button
                                 type="button"
                                 onClick={closeInfo}
-                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
                                 aria-label="Close"
                             >
                                 <svg

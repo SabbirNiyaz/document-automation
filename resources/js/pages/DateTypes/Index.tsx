@@ -67,6 +67,32 @@ export default function Index({
         }
     }, [flash?.success]);
 
+    // Info modal
+    const [infoDateType, setInfoDateType] =
+        useState<DateType | null>(null);
+
+    function openInfo(dateType: DateType) {
+        setInfoDateType(dateType);
+    }
+
+    function closeInfo() {
+        setInfoDateType(null);
+    }
+
+    // Close modal on Escape
+    useEffect(() => {
+        if (!infoDateType) return;
+
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                closeInfo();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [infoDateType]);
+
     function handleSearch(e: FormEvent) {
         e.preventDefault();
 
@@ -246,63 +272,18 @@ export default function Index({
                                         </span>
                                     </div>
 
-                                    <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 text-sm xs:grid-cols-2">
-
-                                        {/* Created */}
-                                        <div>
-                                            <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                                Created
-                                            </dt>
-
-                                            <dd className="break-words text-gray-600">
-                                                {formatDate(
-                                                    dateType.created_at
-                                                )}
-                                            </dd>
-                                        </div>
-
-                                        {/* Created By */}
-                                        <div>
-                                            <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                                Created By
-                                            </dt>
-
-                                            <dd className="break-words text-gray-600">
-                                                {dateType.created_by
-                                                    ? `${dateType.created_by.name} (ID: ${dateType.created_by.id})`
-                                                    : '—'}
-                                            </dd>
-                                        </div>
-
-                                        {/* Updated */}
-                                        <div>
-                                            <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                                Updated
-                                            </dt>
-
-                                            <dd className="break-words text-gray-600">
-                                                {formatDate(
-                                                    dateType.updated_at
-                                                )}
-                                            </dd>
-                                        </div>
-
-                                        {/* Updated By */}
-                                        <div>
-                                            <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                                Updated By
-                                            </dt>
-
-                                            <dd className="break-words text-gray-600">
-                                                {dateType.updated_by
-                                                    ? `${dateType.updated_by.name} (ID: ${dateType.updated_by.id})`
-                                                    : '—'}
-                                            </dd>
-                                        </div>
-                                    </dl>
-
                                     {/* Actions */}
                                     <div className="mt-4 flex gap-3">
+
+                                        <button
+                                            type="button"
+                                            onClick={() => openInfo(dateType)}
+                                            className="inline-flex items-center rounded-md bg-gray-500 px-3.5 py-1.5
+                                            text-sm font-medium text-white shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 
+                                            focus:ring-gray-500 focus:ring-offset-2 cursor-pointer"
+                                        >
+                                            Info
+                                        </button>
 
                                         <Link
                                             href={
@@ -310,7 +291,7 @@ export default function Index({
                                                     dateType.dateTypeId
                                                 ).url
                                             }
-                                            className="inline-flex items-center rounded-md bg-yellow-500 px-3.5 
+                                            className="ml-4 inline-flex items-center rounded-md bg-yellow-500 px-3.5 
                                             py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
                                         >
                                             Edit
@@ -356,22 +337,6 @@ export default function Index({
                                         Status
                                     </th>
 
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                        Created
-                                    </th>
-
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                        Created By
-                                    </th>
-
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                        Updated
-                                    </th>
-
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                        Updated By
-                                    </th>
-
                                     <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">
                                         Actions
                                     </th>
@@ -415,31 +380,16 @@ export default function Index({
                                                 </span>
                                             </td>
 
-                                            <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
-                                                {formatDate(
-                                                    dateType.created_at
-                                                )}
-                                            </td>
-
-                                            <td className="px-4 py-3 text-sm text-gray-500">
-                                                {dateType.created_by
-                                                    ? `${dateType.created_by.name} (ID: ${dateType.created_by.id})`
-                                                    : '—'}
-                                            </td>
-
-                                            <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
-                                                {formatDate(
-                                                    dateType.updated_at
-                                                )}
-                                            </td>
-
-                                            <td className="px-4 py-3 text-sm text-gray-500">
-                                                {dateType.updated_by
-                                                    ? `${dateType.updated_by.name} (ID: ${dateType.updated_by.id})`
-                                                    : '—'}
-                                            </td>
-
                                             <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openInfo(dateType)}
+                                                    className="inline-flex items-center rounded-md bg-gray-400 px-3.5 py-1.5 text-sm font-medium 
+                                                    text-white hover:bg-gray-500 cursor-pointer"
+                                                >
+                                                    Info
+                                                </button>
 
                                                 <Link
                                                     href={
@@ -447,7 +397,7 @@ export default function Index({
                                                             dateType.dateTypeId
                                                         ).url
                                                     }
-                                                    className="inline-flex items-center rounded-md bg-yellow-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
+                                                    className="ml-4 inline-flex items-center rounded-md bg-yellow-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
                                                 >
                                                     Edit
                                                 </Link>
@@ -503,6 +453,113 @@ export default function Index({
                 )}
 
             </div>
+
+            {/* Info Modal */}
+            {infoDateType && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeInfo}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Record Info
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    {infoDateType.dateTypeName}
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeInfo}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <dl className="mt-4 grid grid-cols-1 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2 sm:gap-x-4">
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Created
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {formatDate(infoDateType.created_at)}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Created By
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {infoDateType.created_by
+                                        ? `${infoDateType.created_by.name} (ID: ${infoDateType.created_by.id})`
+                                        : '—'}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Updated
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {formatDate(infoDateType.updated_at)}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Updated By
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {infoDateType.updated_by
+                                        ? `${infoDateType.updated_by.name} (ID: ${infoDateType.updated_by.id})`
+                                        : '—'}
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <div className="mt-5 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={closeInfo}
+                                className="inline-flex items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm 
+                                font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                                focus:ring-offset-2 cursor-pointer"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

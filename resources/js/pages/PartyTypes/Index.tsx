@@ -56,6 +56,31 @@ export default function Index({ partyTypes, filters }: Props) {
         }
     }, [flash?.success]);
 
+    // Info modal
+    const [infoPartyType, setInfoPartyType] = useState<PartyType | null>(null);
+
+    function openInfo(partyType: PartyType) {
+        setInfoPartyType(partyType);
+    }
+
+    function closeInfo() {
+        setInfoPartyType(null);
+    }
+
+    // Close modal on Escape
+    useEffect(() => {
+        if (!infoPartyType) return;
+
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                closeInfo();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [infoPartyType]);
+
     // Search
     function handleSearch(e: FormEvent) {
         e.preventDefault();
@@ -218,49 +243,17 @@ export default function Index({ partyTypes, filters }: Props) {
                                     </span>
                                 </div>
 
-                                <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 text-sm xs:grid-cols-2">
-                                    <div>
-                                        <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                            Created
-                                        </dt>
-                                        <dd className="text-gray-600 break-words">
-                                            {formatDate(partyType.created_at)}
-                                        </dd>
-                                    </div>
-
-                                    <div>
-                                        <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                            Created By
-                                        </dt>
-                                        <dd className="text-gray-600 break-words">
-                                            {partyType.created_by
-                                                ? `${partyType.created_by.name} (ID: ${partyType.created_by.id})`
-                                                : '—'}
-                                        </dd>
-                                    </div>
-
-                                    <div>
-                                        <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                            Updated
-                                        </dt>
-                                        <dd className="text-gray-600 break-words">
-                                            {formatDate(partyType.updated_at)}
-                                        </dd>
-                                    </div>
-
-                                    <div>
-                                        <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                            Updated By
-                                        </dt>
-                                        <dd className="text-gray-600 break-words">
-                                            {partyType.updated_by
-                                                ? `${partyType.updated_by.name} (ID: ${partyType.updated_by.id})`
-                                                : '—'}
-                                        </dd>
-                                    </div>
-                                </dl>
-
                                 <div className="mt-4 flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => openInfo(partyType)}
+                                        className="inline-flex items-center rounded-md bg-gray-500 px-3.5 py-1.5
+                                        text-sm font-medium text-white shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 
+                                        focus:ring-gray-500 focus:ring-offset-2 cursor-pointer"
+                                    >
+                                        Info
+                                    </button>
+
                                     <Link
                                         href={
                                             PartyTypeController.edit(
@@ -308,22 +301,6 @@ export default function Index({ partyTypes, filters }: Props) {
                                         Status
                                     </th>
 
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                        Created
-                                    </th>
-
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                        Created By
-                                    </th>
-
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                        Updated
-                                    </th>
-
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                                        Updated By
-                                    </th>
-
                                     <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">
                                         Actions
                                     </th>
@@ -362,39 +339,24 @@ export default function Index({ partyTypes, filters }: Props) {
                                             </span>
                                         </td>
 
-                                        {/* Created */}
-                                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-                                            {formatDate(partyType.created_at)}
-                                        </td>
-
-                                        {/* Created By */}
-                                        <td className="px-4 py-3 text-sm text-gray-500">
-                                            {partyType.created_by
-                                                ? `${partyType.created_by.name} (ID: ${partyType.created_by.id})`
-                                                : '—'}
-                                        </td>
-
-                                        {/* Updated */}
-                                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-                                            {formatDate(partyType.updated_at)}
-                                        </td>
-
-                                        {/* Updated By */}
-                                        <td className="px-4 py-3 text-sm text-gray-500">
-                                            {partyType.updated_by
-                                                ? `${partyType.updated_by.name} (ID: ${partyType.updated_by.id})`
-                                                : '—'}
-                                        </td>
-
                                         {/* Actions */}
                                         <td className="px-4 py-3 text-right text-sm whitespace-nowrap">
+                                            <button
+                                                type="button"
+                                                onClick={() => openInfo(partyType)}
+                                                className="inline-flex items-center rounded-md bg-gray-400 px-3.5 py-1.5 text-sm font-medium 
+                                                text-white hover:bg-gray-500 cursor-pointer"
+                                            >
+                                                Info
+                                            </button>
+
                                             <Link
                                                 href={
                                                     PartyTypeController.edit(
                                                         partyType.partyTypeId
                                                     ).url
                                                 }
-                                                className="inline-flex items-center gap-1.5 rounded-md bg-yellow-500 px-3.5 py-1.5 
+                                                className="ml-4 inline-flex items-center gap-1.5 rounded-md bg-yellow-500 px-3.5 py-1.5 
                                                 text-sm font-medium text-white shadow-sm transition-colors duration-150 
                                                 hover:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 
                                                 focus:ring-yellow-500 focus:ring-offset-2 disabled:cursor-not-allowed 
@@ -452,6 +414,113 @@ export default function Index({ partyTypes, filters }: Props) {
                     </div>
                 )}
             </div>
+
+            {/* Info Modal */}
+            {infoPartyType && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeInfo}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Record Info
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    {infoPartyType.partyTypeName}
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeInfo}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <dl className="mt-4 grid grid-cols-1 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2 sm:gap-x-4">
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Created
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {formatDate(infoPartyType.created_at)}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Created By
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {infoPartyType.created_by
+                                        ? `${infoPartyType.created_by.name} (ID: ${infoPartyType.created_by.id})`
+                                        : '—'}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Updated
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {formatDate(infoPartyType.updated_at)}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Updated By
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {infoPartyType.updated_by
+                                        ? `${infoPartyType.updated_by.name} (ID: ${infoPartyType.updated_by.id})`
+                                        : '—'}
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <div className="mt-5 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={closeInfo}
+                                className="inline-flex items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm 
+                                font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                                focus:ring-offset-2 cursor-pointer"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
