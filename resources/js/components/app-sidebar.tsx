@@ -16,11 +16,14 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import PartyTypeController from '@/actions/App/Http/Controllers/PartyTypeController';
 import DateTypeController from '@/actions/App/Http/Controllers/DateTypeController';
+import DocumentTypeController from '@/actions/App/Http/Controllers/DocumentTypeController';
+import PartyMasterController from '@/actions/App/Http/Controllers/PartyMasterController';
+import DocumentController from '@/actions/App/Http/Controllers/DocumentController';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        href: dashboard(),
+        title: 'Documents',
+        href: DocumentController.index().url,
     },
     {
         title: 'Party Types',
@@ -29,6 +32,14 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Date Types',
         href: DateTypeController.index().url,
+    },
+    {
+        title: 'Document Types',
+        href: DocumentTypeController.index().url,
+    },
+    {
+        title: 'Party Masters',
+        href: PartyMasterController.index().url,
     },
 ];
 

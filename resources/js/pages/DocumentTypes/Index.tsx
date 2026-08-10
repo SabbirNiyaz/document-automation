@@ -1,14 +1,27 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import DateTypeController from '@/actions/App/Http/Controllers/DateTypeController';
+import {
+    FormEvent,
+    useEffect,
+    useState,
+} from 'react';
+
+import {
+    Head,
+    Link,
+    router,
+    usePage,
+} from '@inertiajs/react';
+
+import DocumentTypeController from '@/actions/App/Http/Controllers/DocumentTypeController';
+
 interface User {
     id: number;
     name: string;
 }
 
-interface DateType {
-    dateTypeId: number;
-    dateTypeName: string;
+interface DocumentType {
+    document_id: number;
+    document_name: string;
+
     status: 'Active' | 'Inactive';
 
     created_at: string | null;
@@ -24,13 +37,13 @@ interface PaginationLink {
     active: boolean;
 }
 
-interface PaginatedDateTypes {
-    data: DateType[];
+interface PaginatedDocumentTypes {
+    data: DocumentType[];
     links: PaginationLink[];
 }
 
 interface Props {
-    dateTypes: PaginatedDateTypes;
+    documentTypes: PaginatedDocumentTypes;
 
     filters: {
         search: string;
@@ -38,7 +51,7 @@ interface Props {
 }
 
 export default function Index({
-    dateTypes,
+    documentTypes,
     filters,
 }: Props) {
     const [search, setSearch] = useState(
@@ -63,15 +76,18 @@ export default function Index({
                 3000
             );
 
-            return () => clearTimeout(timer);
+            return () =>
+                clearTimeout(timer);
         }
     }, [flash?.success]);
 
-    function handleSearch(e: FormEvent) {
+    function handleSearch(
+        e: FormEvent
+    ) {
         e.preventDefault();
 
         router.get(
-            DateTypeController.index().url,
+            DocumentTypeController.index().url,
             { search },
             {
                 preserveState: true,
@@ -84,7 +100,7 @@ export default function Index({
         setSearch('');
 
         router.get(
-            DateTypeController.index().url,
+            DocumentTypeController.index().url,
             {},
             {
                 preserveState: true,
@@ -93,63 +109,68 @@ export default function Index({
         );
     }
 
-    function handleDelete(dateType: DateType) {
+    function handleDelete(
+        documentType: DocumentType
+    ) {
         if (
             !confirm(
-                `Are you sure you want to delete "${dateType.dateTypeName}"? This can't be undone.`
+                `Are you sure you want to delete "${documentType.document_name}"? This can't be undone.`
             )
         ) {
             return;
         }
 
         router.delete(
-            DateTypeController.destroy(
-                dateType.dateTypeId
+            DocumentTypeController.destroy(
+                documentType.document_id
             ).url
         );
     }
 
-    function formatDate(value: string | null) {
+    function formatDate(
+        value: string | null
+    ) {
         return value
-            ? new Date(value).toLocaleString(
-                'en-US',
-                {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                }
-            )
+            ? new Date(
+                  value
+              ).toLocaleString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+              })
             : '—';
     }
 
     return (
         <>
-            <Head title="Date Types" />
+            <Head title="Document Types" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-hidden rounded-sm p-3 sm:p-4">
 
                 {/* Header */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
                     <div>
                         <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
-                            Date Types
+                            Document Types
                         </h1>
 
                         <p className="mt-1 text-sm text-gray-500">
-                            Manage the date types used across the system.
+                            Manage the document types used across the system.
                         </p>
                     </div>
 
                     <Link
                         href={
-                            DateTypeController.create()
+                            DocumentTypeController
+                                .create()
                                 .url
                         }
                         className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
                     >
-                        Add Date Type
+                        Add Document Type
                     </Link>
                 </div>
 
@@ -170,13 +191,16 @@ export default function Index({
                         type="text"
                         value={search}
                         onChange={(e) =>
-                            setSearch(e.target.value)
+                            setSearch(
+                                e.target.value
+                            )
                         }
                         placeholder="Search by name..."
                         className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:max-w-xs"
                     />
 
                     <div className="flex gap-2">
+
                         <button
                             type="submit"
                             className="flex-1 cursor-pointer rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:flex-none"
@@ -186,47 +210,55 @@ export default function Index({
 
                         {(search ||
                             filters?.search) && (
-                                <button
-                                    type="button"
-                                    onClick={handleReset}
-                                    className="flex-1 cursor-pointer rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 sm:flex-none"
-                                >
-                                    Reset
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                onClick={
+                                    handleReset
+                                }
+                                className="flex-1 cursor-pointer rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 sm:flex-none"
+                            >
+                                Reset
+                            </button>
+                        )}
+
                     </div>
                 </form>
 
                 {/* Empty State */}
-                {dateTypes.data.length === 0 && (
+                {documentTypes.data.length ===
+                    0 && (
                     <div className="rounded-sm border border-sidebar-border/70 bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm">
-                        No date types found.
+                        No document types found.
                     </div>
                 )}
 
                 {/* Mobile / Tablet */}
-                {dateTypes.data.length > 0 && (
+                {documentTypes.data.length >
+                    0 && (
                     <div className="flex flex-col gap-3 lg:hidden">
-                        {dateTypes.data.map(
-                            (dateType) => (
+
+                        {documentTypes.data.map(
+                            (documentType) => (
                                 <div
                                     key={
-                                        dateType.dateTypeId
+                                        documentType.document_id
                                     }
                                     className="rounded-sm border border-sidebar-border/70 bg-white p-4 shadow-sm"
                                 >
+
                                     <div className="flex items-start justify-between gap-3">
+
                                         <div>
                                             <p className="text-xs text-gray-400">
                                                 ID:{' '}
                                                 {
-                                                    dateType.dateTypeId
+                                                    documentType.document_id
                                                 }
                                             </p>
 
                                             <p className="text-sm font-medium text-gray-900">
                                                 {
-                                                    dateType.dateTypeName
+                                                    documentType.document_name
                                                 }
                                             </p>
                                         </div>
@@ -234,16 +266,17 @@ export default function Index({
                                         <span
                                             className={
                                                 'inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ' +
-                                                (dateType.status ===
-                                                    'Active'
+                                                (documentType.status ===
+                                                'Active'
                                                     ? 'bg-green-100 text-green-800'
                                                     : 'bg-gray-300 text-gray-600')
                                             }
                                         >
                                             {
-                                                dateType.status
+                                                documentType.status
                                             }
                                         </span>
+
                                     </div>
 
                                     <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 text-sm xs:grid-cols-2">
@@ -256,7 +289,7 @@ export default function Index({
 
                                             <dd className="break-words text-gray-600">
                                                 {formatDate(
-                                                    dateType.created_at
+                                                    documentType.created_at
                                                 )}
                                             </dd>
                                         </div>
@@ -268,8 +301,8 @@ export default function Index({
                                             </dt>
 
                                             <dd className="break-words text-gray-600">
-                                                {dateType.created_by
-                                                    ? `${dateType.created_by.name} (ID: ${dateType.created_by.id})`
+                                                {documentType.created_by
+                                                    ? `${documentType.created_by.name} (ID: ${documentType.created_by.id})`
                                                     : '—'}
                                             </dd>
                                         </div>
@@ -282,7 +315,7 @@ export default function Index({
 
                                             <dd className="break-words text-gray-600">
                                                 {formatDate(
-                                                    dateType.updated_at
+                                                    documentType.updated_at
                                                 )}
                                             </dd>
                                         </div>
@@ -294,11 +327,12 @@ export default function Index({
                                             </dt>
 
                                             <dd className="break-words text-gray-600">
-                                                {dateType.updated_by
-                                                    ? `${dateType.updated_by.name} (ID: ${dateType.updated_by.id})`
+                                                {documentType.updated_by
+                                                    ? `${documentType.updated_by.name} (ID: ${documentType.updated_by.id})`
                                                     : '—'}
                                             </dd>
                                         </div>
+
                                     </dl>
 
                                     {/* Actions */}
@@ -306,12 +340,11 @@ export default function Index({
 
                                         <Link
                                             href={
-                                                DateTypeController.edit(
-                                                    dateType.dateTypeId
+                                                DocumentTypeController.edit(
+                                                    documentType.document_id
                                                 ).url
                                             }
-                                            className="inline-flex items-center rounded-md bg-yellow-500 px-3.5 
-                                            py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
+                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-yellow-500 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-yellow-600"
                                         >
                                             Edit
                                         </Link>
@@ -320,30 +353,33 @@ export default function Index({
                                             type="button"
                                             onClick={() =>
                                                 handleDelete(
-                                                    dateType
+                                                    documentType
                                                 )
                                             }
-                                            className="ml-4 inline-flex items-center rounded-md bg-red-500 px-3.5 py-1.5 text-sm 
-                                            font-medium text-white hover:bg-red-600 cursor-pointer"
+                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-red-500 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-red-600"
                                         >
                                             Delete
                                         </button>
 
                                     </div>
+
                                 </div>
                             )
                         )}
+
                     </div>
                 )}
 
                 {/* Desktop Table */}
-                {dateTypes.data.length > 0 && (
+                {documentTypes.data.length >
+                    0 && (
                     <div className="hidden overflow-x-auto rounded-sm border border-sidebar-border/70 bg-white shadow-sm lg:block">
 
                         <table className="min-w-full divide-y divide-gray-200">
 
                             <thead className="bg-gray-50">
                                 <tr>
+
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                                         ID
                                     </th>
@@ -375,27 +411,29 @@ export default function Index({
                                     <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">
                                         Actions
                                     </th>
+
                                 </tr>
                             </thead>
 
                             <tbody className="divide-y divide-gray-200">
 
-                                {dateTypes.data.map(
-                                    (dateType) => (
+                                {documentTypes.data.map(
+                                    (documentType) => (
                                         <tr
                                             key={
-                                                dateType.dateTypeId
+                                                documentType.document_id
                                             }
                                         >
+
                                             <td className="px-4 py-3 text-sm text-gray-500">
                                                 {
-                                                    dateType.dateTypeId
+                                                    documentType.document_id
                                                 }
                                             </td>
 
                                             <td className="px-4 py-3 text-sm font-medium text-gray-900">
                                                 {
-                                                    dateType.dateTypeName
+                                                    documentType.document_name
                                                 }
                                             </td>
 
@@ -403,39 +441,39 @@ export default function Index({
                                                 <span
                                                     className={
                                                         'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
-                                                        (dateType.status ===
-                                                            'Active'
+                                                        (documentType.status ===
+                                                        'Active'
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-gray-300 text-gray-600')
                                                     }
                                                 >
                                                     {
-                                                        dateType.status
+                                                        documentType.status
                                                     }
                                                 </span>
                                             </td>
 
                                             <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
                                                 {formatDate(
-                                                    dateType.created_at
+                                                    documentType.created_at
                                                 )}
                                             </td>
 
                                             <td className="px-4 py-3 text-sm text-gray-500">
-                                                {dateType.created_by
-                                                    ? `${dateType.created_by.name} (ID: ${dateType.created_by.id})`
+                                                {documentType.created_by
+                                                    ? `${documentType.created_by.name} (ID: ${documentType.created_by.id})`
                                                     : '—'}
                                             </td>
 
                                             <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
                                                 {formatDate(
-                                                    dateType.updated_at
+                                                    documentType.updated_at
                                                 )}
                                             </td>
 
                                             <td className="px-4 py-3 text-sm text-gray-500">
-                                                {dateType.updated_by
-                                                    ? `${dateType.updated_by.name} (ID: ${dateType.updated_by.id})`
+                                                {documentType.updated_by
+                                                    ? `${documentType.updated_by.name} (ID: ${documentType.updated_by.id})`
                                                     : '—'}
                                             </td>
 
@@ -443,11 +481,12 @@ export default function Index({
 
                                                 <Link
                                                     href={
-                                                        DateTypeController.edit(
-                                                            dateType.dateTypeId
+                                                        DocumentTypeController.edit(
+                                                            documentType.document_id
                                                         ).url
                                                     }
-                                                    className="inline-flex items-center rounded-md bg-yellow-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
+                                                    className="inline-flex items-center rounded-md bg-yellow-500 px-3.5 
+                                                    py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
                                                 >
                                                     Edit
                                                 </Link>
@@ -456,15 +495,17 @@ export default function Index({
                                                     type="button"
                                                     onClick={() =>
                                                         handleDelete(
-                                                            dateType
+                                                            documentType
                                                         )
                                                     }
-                                                    className="ml-4 inline-flex items-center rounded-md bg-red-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-red-600"
+                                                    className="ml-4 inline-flex items-center rounded-md bg-red-500 px-3.5 py-1.5 text-sm 
+                                                    font-medium text-white hover:bg-red-600 cursor-pointer"
                                                 >
                                                     Delete
                                                 </button>
 
                                             </td>
+
                                         </tr>
                                     )
                                 )}
@@ -475,9 +516,11 @@ export default function Index({
                 )}
 
                 {/* Pagination */}
-                {dateTypes.links.length > 3 && (
+                {documentTypes.links.length >
+                    3 && (
                     <div className="flex flex-wrap justify-center gap-1 sm:justify-end">
-                        {dateTypes.links.map(
+
+                        {documentTypes.links.map(
                             (link, i) => (
                                 <Link
                                     key={i}
@@ -499,6 +542,7 @@ export default function Index({
                                 />
                             )
                         )}
+
                     </div>
                 )}
 
@@ -510,8 +554,9 @@ export default function Index({
 Index.layout = {
     breadcrumbs: [
         {
-            title: 'Date Types',
-            href: DateTypeController.index().url,
+            title: 'Document Types',
+            href: DocumentTypeController
+                .index().url,
         },
     ],
 };

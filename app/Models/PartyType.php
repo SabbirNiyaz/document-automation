@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PartyType extends Model
@@ -51,5 +52,17 @@ class PartyType extends Model
         static::updating(function (PartyType $partyType) {
             $partyType->modified_by = auth()->id();
         });
+    }
+
+    /**
+     * Parties belonging to this party type.
+     */
+    public function parties(): HasMany
+    {
+        return $this->hasMany(
+            PartyMaster::class,
+            'partyTypeId',
+            'partyTypeId'
+        );
     }
 }

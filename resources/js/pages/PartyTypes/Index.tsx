@@ -103,12 +103,12 @@ export default function Index({ partyTypes, filters }: Props) {
     function formatDate(value: string | null) {
         return value
             ? new Date(value).toLocaleString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-              })
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            })
             : '—';
     }
 
@@ -267,11 +267,8 @@ export default function Index({ partyTypes, filters }: Props) {
                                                 partyType.partyTypeId
                                             ).url
                                         }
-                                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-yellow-500 px-3.5 py-1.5 
-                                        text-sm font-medium text-white shadow-sm transition-colors duration-150 
-                                        hover:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 
-                                        focus:ring-yellow-500 focus:ring-offset-2 disabled:cursor-not-allowed 
-                                        disabled:opacity-50 cursor-pointer"
+                                        className="inline-flex items-center rounded-md bg-yellow-500 px-3.5 
+                                        py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
                                     >
                                         Edit
                                     </Link>
@@ -279,11 +276,8 @@ export default function Index({ partyTypes, filters }: Props) {
                                     <button
                                         type="button"
                                         onClick={() => handleDelete(partyType)}
-                                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-red-500 px-3.5 py-1.5 
-                                        text-sm font-medium text-white shadow-sm transition-colors duration-150 
-                                        hover:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 
-                                        focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed 
-                                        disabled:opacity-50 cursor-pointer"
+                                        className="ml-4 inline-flex items-center rounded-md bg-red-500 px-3.5 py-1.5 text-sm 
+                                        font-medium text-white hover:bg-red-600 cursor-pointer"
                                     >
                                         Delete
                                     </button>
