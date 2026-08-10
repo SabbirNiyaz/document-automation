@@ -122,6 +122,31 @@ export default function Index({
         };
     }, [pdfModal.open]);
 
+    // Info modal state
+    const [infoDocument, setInfoDocument] = useState<DocumentItem | null>(null);
+
+    function openInfo(document: DocumentItem) {
+        setInfoDocument(document);
+    }
+
+    function closeInfo() {
+        setInfoDocument(null);
+    }
+
+    // Close info modal on Escape key
+    useEffect(() => {
+        if (!infoDocument) return;
+
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                closeInfo();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [infoDocument]);
+
     useEffect(() => {
 
         if (flash?.success) {
@@ -461,41 +486,20 @@ export default function Index({
 
                                         </div>
 
-                                        <div>
-
-                                            <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                                Created By
-                                            </dt>
-
-                                            <dd className="text-gray-600">
-                                                {
-                                                    document.created_by
-                                                        ? `${document.created_by.name} (ID: ${document.created_by.id})`
-                                                        : '—'
-                                                }
-                                            </dd>
-
-                                        </div>
-
-                                        <div>
-
-                                            <dt className="text-xs uppercase tracking-wide text-gray-400">
-                                                Updated By
-                                            </dt>
-
-                                            <dd className="text-gray-600">
-                                                {
-                                                    document.updated_by
-                                                        ? `${document.updated_by.name} (ID: ${document.updated_by.id})`
-                                                        : '—'
-                                                }
-                                            </dd>
-
-                                        </div>
-
                                     </dl>
 
                                     <div className="mt-4 flex flex-wrap gap-2">
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                openInfo(document)
+                                            }
+                                            className="rounded-md bg-gray-500 px-3 py-1.5 text-sm 
+                                            font-medium text-white hover:bg-gray-600 cursor-pointer"
+                                        >
+                                            Info
+                                        </button>
 
                                         {document.attachment ? (
 
@@ -504,7 +508,8 @@ export default function Index({
                                                 onClick={() =>
                                                     openPdfModal(document)
                                                 }
-                                                className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
+                                                className="rounded-md bg-blue-500 px-3 py-1.5 text-sm 
+                                                font-medium text-white hover:bg-blue-600 cursor-pointer"
                                             >
                                                 View PDF
                                             </button>
@@ -523,7 +528,7 @@ export default function Index({
                                                     document.docId
                                                 ).url
                                             }
-                                            className="rounded-md bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
+                                            className="rounded-md bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 cursor-pointer"
                                         >
                                             Edit
                                         </Link>
@@ -535,7 +540,7 @@ export default function Index({
                                                     document
                                                 )
                                             }
-                                            className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-600"
+                                            className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-600 cursor-pointer"
                                         >
                                             Delete
                                         </button>
@@ -696,7 +701,9 @@ export default function Index({
                                                         onClick={() =>
                                                             openPdfModal(document)
                                                         }
-                                                        className="inline-flex rounded-md bg-blue-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600"
+                                                        className="inline-flex rounded-md bg-blue-500 px-3 
+                                                        py-1.5 text-xs font-medium text-white 
+                                                        hover:bg-blue-600 cursor-pointer"
                                                     >
                                                         View PDF
                                                     </button>
@@ -713,13 +720,24 @@ export default function Index({
 
                                             <td className="px-4 py-3 text-right whitespace-nowrap">
 
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        openInfo(document)
+                                                    }
+                                                    className="inline-flex rounded-md bg-gray-400 px-3.5 py-1.5 text-sm 
+                                                    font-medium text-white hover:bg-gray-500 cursor-pointer"
+                                                >
+                                                    Info
+                                                </button>
+
                                                 <Link
                                                     href={
                                                         DocumentController.edit(
                                                             document.docId
                                                         ).url
                                                     }
-                                                    className="inline-flex rounded-md bg-yellow-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-yellow-600"
+                                                    className="ml-3 inline-flex rounded-md bg-yellow-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-yellow-600 cursor-pointer"
                                                 >
                                                     Edit
                                                 </Link>
@@ -731,7 +749,7 @@ export default function Index({
                                                             document
                                                         )
                                                     }
-                                                    className="ml-3 inline-flex rounded-md bg-red-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-red-600"
+                                                    className="ml-3 inline-flex rounded-md bg-red-500 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-red-600 cursor-pointer"
                                                 >
                                                     Delete
                                                 </button>
@@ -802,7 +820,7 @@ export default function Index({
                     >
 
                         <div
-                            className="flex h-[90vh] w-full max-w-4xl flex-col rounded-sm bg-white shadow-xl"
+                            className="flex h-[95vh] w-full max-w-6xl flex-col rounded-sm bg-white shadow-xl"
                             onClick={(e) => e.stopPropagation()}
                         >
 
@@ -815,7 +833,8 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closePdfModal}
-                                    className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                                    className="rounded-md p-1 text-gray-500 hover:bg-gray-100 
+                                    hover:text-gray-700 cursor-pointer"
                                     aria-label="Close"
                                 >
                                     ✕
@@ -836,6 +855,126 @@ export default function Index({
                                     title={pdfModal.title}
                                 />
 
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                )}
+
+                {/* Info Modal */}
+
+                {infoDocument && (
+
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeInfo}
+                    >
+
+                        <div
+                            className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+
+                            <div className="flex items-start justify-between gap-3">
+
+                                <div>
+
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Record Info
+                                    </h2>
+
+                                    <p className="mt-0.5 text-sm text-gray-500">
+                                        {infoDocument.title}
+                                    </p>
+
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeInfo}
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                    hover:text-gray-600 focus:outline-none focus:ring-2 
+                                    focus:ring-indigo-500 cursor-pointer"
+                                    aria-label="Close"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-5 w-5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    </svg>
+                                </button>
+
+                            </div>
+
+                            <dl className="mt-4 grid grid-cols-1 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2 sm:gap-x-4">
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Created
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {formatDate(infoDocument.created_at)}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Created By
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {infoDocument.created_by
+                                            ? `${infoDocument.created_by.name} (ID: ${infoDocument.created_by.id})`
+                                            : '—'}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Updated
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {formatDate(infoDocument.updated_at)}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Updated By
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {infoDocument.updated_by
+                                            ? `${infoDocument.updated_by.name} (ID: ${infoDocument.updated_by.id})`
+                                            : '—'}
+                                    </dd>
+                                </div>
+
+                            </dl>
+
+                            <div className="mt-5 flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={closeInfo}
+                                    className="inline-flex items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm 
+                                    font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                                    focus:ring-offset-2 cursor-pointer"
+                                >
+                                    Close
+                                </button>
                             </div>
 
                         </div>
