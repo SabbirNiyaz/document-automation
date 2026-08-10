@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DateType extends Model
 {
@@ -71,4 +72,14 @@ class DateType extends Model
             $dateType->updated_by = auth()->id();
         });
     }
+
+    // Relationships
+    public function dateDetails(): HasMany
+    {
+        return $this->hasMany(
+            DateDetail::class,
+            'dateTypeId',
+            'dateTypeId'
+        );
+    }   
 }

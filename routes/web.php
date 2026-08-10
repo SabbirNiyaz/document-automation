@@ -6,6 +6,7 @@ use App\Http\Controllers\DateTypeController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\PartyMasterController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DateDetailController;
 
 Route::inertia('/', 'welcome')->name('home');
 
@@ -39,6 +40,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Document Routes
     Route::resource('documents', DocumentController::class)
         ->parameters(['documents' => 'document'])
+        ->except(['show']);
+
+    // Date Details Routes
+    Route::resource('date-details', DateDetailController::class)
+        ->parameters(['date-details' => 'date_detail'])
         ->except(['show']);
 });
 

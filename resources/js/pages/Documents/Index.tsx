@@ -841,7 +841,8 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closePdfModal}
-                                    className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                                    className="rounded-md p-1 text-gray-500 hover:bg-gray-100 
+                                    hover:text-gray-700 cursor-pointer"
                                     aria-label="Close"
                                 >
                                     <X className="h-4 w-4" />
@@ -901,7 +902,9 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closeInfo}
-                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                    hover:text-gray-600 focus:outline-none focus:ring-2 
+                                    focus:ring-indigo-500 cursor-pointer"
                                     aria-label="Close"
                                 >
                                     <X className="h-5 w-5" />

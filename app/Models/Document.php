@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Document extends Model
 {
@@ -100,5 +101,14 @@ class Document extends Model
         static::updating(function (Document $document) {
             $document->updated_by = auth()->id();
         });
+    }
+    // Relationships (One-to-Many)
+    public function dateDetails(): HasMany
+    {
+        return $this->hasMany(
+            DateDetail::class,
+            'docId',
+            'docId'
+        );
     }
 }

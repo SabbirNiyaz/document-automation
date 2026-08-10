@@ -19,6 +19,7 @@ import DateTypeController from '@/actions/App/Http/Controllers/DateTypeControlle
 import DocumentTypeController from '@/actions/App/Http/Controllers/DocumentTypeController';
 import PartyMasterController from '@/actions/App/Http/Controllers/PartyMasterController';
 import DocumentController from '@/actions/App/Http/Controllers/DocumentController';
+import DateDetailController from '@/actions/App/Http/Controllers/DateDetailController';
 
 const mainNavItems: NavItem[] = [
     {
@@ -26,16 +27,20 @@ const mainNavItems: NavItem[] = [
         href: DocumentController.index().url,
     },
     {
-        title: 'Party Types',
-        href: PartyTypeController.index().url,
+        title: 'Document Types',
+        href: DocumentTypeController.index().url,
     },
     {
         title: 'Date Types',
         href: DateTypeController.index().url,
     },
     {
-        title: 'Document Types',
-        href: DocumentTypeController.index().url,
+        title: 'Date Details',
+        href: DateDetailController.index().url,
+    },
+    {
+        title: 'Party Types',
+        href: PartyTypeController.index().url,
     },
     {
         title: 'Party Masters',
