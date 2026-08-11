@@ -14,6 +14,7 @@ class PartyTypeController extends Controller
     public function index(Request $request): Response
     {
         $search = $request->string('search')->toString();
+        $status = $request->string('status')->toString(); // '', 'Active', or 'Inactive'
 
         $partyTypes = PartyType::with([
                 'createdBy:id,name',
@@ -27,13 +28,14 @@ class PartyTypeController extends Controller
                     "%{$search}%"
                 )
             )
+            ->when(
+                $status && in_array($status, ['Active', 'Inactive']),
+                fn ($q) => $q->where('status', $status)
+            )
             ->orderByDesc('partyTypeId')
             ->paginate(10)
             ->withQueryString();
 
-        // Map explicitly so the frontend's `created_by` / `updated_by`
-        // keys always receive { id, name } objects (or null), regardless
-        // of the underlying relation/column naming (modified_by vs updated_by).
         $partyTypes->through(fn (PartyType $partyType) => [
             'partyTypeId'   => $partyType->partyTypeId,
             'partyTypeName' => $partyType->partyTypeName,
@@ -48,6 +50,7 @@ class PartyTypeController extends Controller
             'partyTypes' => $partyTypes,
             'filters' => [
                 'search' => $search,
+                'status' => $status,
             ],
         ]);
     }

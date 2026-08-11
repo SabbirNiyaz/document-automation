@@ -34,11 +34,13 @@ interface Props {
     partyTypes: PaginatedPartyTypes;
     filters: {
         search: string;
+        status: string; // '' | 'Active' | 'Inactive'
     };
 }
 
 export default function Index({ partyTypes, filters }: Props) {
     const [search, setSearch] = useState(filters?.search ?? '');
+    const [status, setStatus] = useState(filters?.status || 'all');
 
     const { flash } = usePage().props as {
         flash?: {
@@ -82,13 +84,16 @@ export default function Index({ partyTypes, filters }: Props) {
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [infoPartyType]);
 
-    // Search
+    // Search (server-side, applies to full dataset before pagination)
     function handleSearch(e: FormEvent) {
         e.preventDefault();
 
         router.get(
             PartyTypeController.index().url,
-            { search },
+            {
+                search,
+                status: status !== 'all' ? status : undefined,
+            },
             {
                 preserveState: true,
                 replace: true,
@@ -96,13 +101,48 @@ export default function Index({ partyTypes, filters }: Props) {
         );
     }
 
-    // Clear search
-    function handleReset() {
+    // Reset just the search term, keep status as-is
+    function handleResetSearch() {
         setSearch('');
 
         router.get(
             PartyTypeController.index().url,
-            {},
+            {
+                status: status !== 'all' ? status : undefined,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    }
+
+    // Status dropdown fires immediately, keeps current search term
+    function handleStatusChange(value: string) {
+        setStatus(value);
+
+        router.get(
+            PartyTypeController.index().url,
+            {
+                search,
+                status: value !== 'all' ? value : undefined,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    }
+
+    // Reset just the status filter, keep search as-is
+    function handleResetStatus() {
+        setStatus('all');
+
+        router.get(
+            PartyTypeController.index().url,
+            {
+                search,
+            },
             {
                 preserveState: true,
                 replace: true,
@@ -170,40 +210,77 @@ export default function Index({ partyTypes, filters }: Props) {
                     </div>
                 )}
 
-                {/* Search */}
-                <form
-                    onSubmit={handleSearch}
-                    className="flex flex-col gap-2 sm:flex-row"
-                >
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by name..."
-                        className="w-full rounded-sm border-gray-300 text-sm shadow-sm 
-                        px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:max-w-xs"
-                    />
+                {/* Search + Status filters */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
-                    <div className="flex gap-2">
+                    {/* Search group */}
+                    <form
+                        onSubmit={handleSearch}
+                        className="flex items-center gap-2"
+                    >
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search by Name..."
+                            className="w-full rounded-sm border-gray-300 text-sm shadow-sm 
+                            px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:w-64"
+                        />
+
                         <button
                             type="submit"
-                            className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
-                             font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer sm:flex-none"
+                            className="shrink-0 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
+                             font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer"
                         >
                             Search
                         </button>
+
                         {(search || filters?.search) && (
                             <button
                                 type="button"
-                                onClick={handleReset}
-                                className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
-                                 font-medium text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer sm:flex-none"
+                                onClick={handleResetSearch}
+                                className="shrink-0 inline-flex items-center justify-center rounded-sm border border-gray-300 
+                                bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                title="Clear search"
+                                aria-label="Clear search"
                             >
-                                Reset
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </form>
+
+                    {/* Status filter group */}
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="status-filter" className="text-sm text-gray-500 shrink-0">
+                            Status:
+                        </label>
+
+                        <select
+                            id="status-filter"
+                            value={status}
+                            onChange={(e) => handleStatusChange(e.target.value)}
+                            className="rounded-sm border-gray-300 text-sm shadow-sm px-3 py-2 
+                            focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
+                        >
+                            <option value="all">All</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+
+                        {status !== 'all' && (
+                            <button
+                                type="button"
+                                onClick={handleResetStatus}
+                                className="shrink-0 inline-flex items-center justify-center rounded-sm border border-gray-300 
+                                bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                title="Clear status filter"
+                                aria-label="Clear status filter"
+                            >
+                                <X className="h-4 w-4" />
                             </button>
                         )}
                     </div>
-                </form>
+                </div>
 
                 {/* Empty state (shared) */}
                 {partyTypes.data.length === 0 && (

@@ -197,7 +197,7 @@ export default function Index({ partyMasters, filters }: Props) {
                         onChange={(e) =>
                             setSearch(e.target.value)
                         }
-                        placeholder="Search by party name..."
+                        placeholder="Search by Party Name or Party Type..."
                         className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:max-w-xs"
                     />
 

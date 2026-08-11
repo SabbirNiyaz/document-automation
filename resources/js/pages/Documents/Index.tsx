@@ -512,7 +512,7 @@ export default function Index({
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by documents Title, Description, Document Type..."
+                        placeholder="Search by Title, Description or Document Type..."
                         className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[600px]"
                     />
 
