@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import DocumentController from '@/actions/App/Http/Controllers/DocumentController';
-import { Info as InfoIcon, Pencil, Trash2, FileText, Calendar, X } from 'lucide-react';
+import DateDetailController from '@/actions/App/Http/Controllers/DateDetailController';
+import { Info as InfoIcon, Pencil, Trash2, FileText, Calendar, X, Plus } from 'lucide-react';
 
 interface User {
     id: number;
@@ -20,9 +21,10 @@ interface DocumentType {
 
 interface DateDetailItem {
     id: number;
+    dateTypeId: number;
     dateTypeName: string | null;
     date_value: string | null;
-    // status: 'Active' | 'Inactive';
+    status: 'Active' | 'Inactive';
 }
 
 interface DocumentItem {
@@ -53,17 +55,25 @@ interface PaginatedDocuments {
     links: PaginationLink[];
 }
 
+interface DateTypeOption {
+    dateTypeId: number;
+    dateTypeName: string;
+}
+
 interface Props {
     documents: PaginatedDocuments;
 
     filters: {
         search: string;
     };
+
+    dateTypes: DateTypeOption[];
 }
 
 export default function Index({
     documents,
     filters,
+    dateTypes,
 }: Props) {
     const [search, setSearch] = useState(
         filters?.search ?? ''
@@ -119,10 +129,12 @@ export default function Index({
     // Date modal state
     const [dateModal, setDateModal] = useState<{
         open: boolean;
+        docId: number | null;
         title: string;
         dateDetails: DateDetailItem[];
     }>({
         open: false,
+        docId: null,
         title: '',
         dateDetails: [],
     });
@@ -130,6 +142,7 @@ export default function Index({
     function openDateModal(document: DocumentItem) {
         setDateModal({
             open: true,
+            docId: document.docId,
             title: document.title,
             dateDetails: document.dateDetails ?? [],
         });
@@ -138,8 +151,129 @@ export default function Index({
     function closeDateModal() {
         setDateModal({
             open: false,
+            docId: null,
             title: '',
             dateDetails: [],
+        });
+    }
+
+    // Add Date modal state
+    const [addDateModal, setAddDateModal] = useState<{
+        open: boolean;
+        docId: number | null;
+    }>({
+        open: false,
+        docId: null,
+    });
+
+    const {
+        data: addDateData,
+        setData: setAddDateData,
+        post: postAddDate,
+        processing: addDateProcessing,
+        errors: addDateErrors,
+        reset: resetAddDate,
+        clearErrors: clearAddDateErrors,
+    } = useForm({
+        dateTypeId: '',
+        docId: '' as number | string,
+        date_value: '',
+        status: 'Active',
+        stay: true,
+    });
+
+    function openAddDateModal(docId: number) {
+        resetAddDate();
+        clearAddDateErrors();
+        setAddDateData({
+            dateTypeId: '',
+            docId,
+            date_value: '',
+            status: 'Active',
+            stay: true,
+        });
+        setAddDateModal({ open: true, docId });
+    }
+
+    function closeAddDateModal() {
+        setAddDateModal({ open: false, docId: null });
+        resetAddDate();
+        clearAddDateErrors();
+    }
+
+    // Edit Date modal state
+    const [editDateModal, setEditDateModal] = useState<{
+        open: boolean;
+        id: number | null;
+        dateTypeName: string | null;
+    }>({
+        open: false,
+        id: null,
+        dateTypeName: null,
+    });
+
+    const {
+        data: editDateData,
+        setData: setEditDateData,
+        put: putEditDate,
+        processing: editDateProcessing,
+        errors: editDateErrors,
+        reset: resetEditDate,
+        clearErrors: clearEditDateErrors,
+    } = useForm({
+        dateTypeId: '' as number | string,
+        docId: '' as number | string,
+        date_value: '',
+        status: 'Active' as 'Active' | 'Inactive',
+        stay: true,
+    });
+
+    function openEditDateModal(detail: DateDetailItem) {
+        resetEditDate();
+        clearEditDateErrors();
+        setEditDateData({
+            dateTypeId: detail.dateTypeId,
+            docId: dateModal.docId ?? '',
+            date_value: detail.date_value ?? '',
+            status: detail.status,
+            stay: true,
+        });
+        setEditDateModal({
+            open: true,
+            id: detail.id,
+            dateTypeName: detail.dateTypeName,
+        });
+    }
+
+    function closeEditDateModal() {
+        setEditDateModal({ open: false, id: null, dateTypeName: null });
+        resetEditDate();
+        clearEditDateErrors();
+    }
+
+    function submitEditDate(e: FormEvent) {
+        e.preventDefault();
+
+        if (!editDateModal.id) return;
+
+        putEditDate(DateDetailController.update(editDateModal.id).url, {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeEditDateModal();
+                closeDateModal();
+            },
+        });
+    }
+
+    function submitAddDate(e: FormEvent) {
+        e.preventDefault();
+
+        postAddDate(DateDetailController.store().url, {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeAddDateModal();
+                closeDateModal();
+            },
         });
     }
 
@@ -191,6 +325,38 @@ export default function Index({
         return () =>
             document.removeEventListener('keydown', handleKeyDown);
     }, [dateModal.open]);
+
+    // Close add date modal on Escape key
+    useEffect(() => {
+        if (!addDateModal.open) return;
+
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                closeAddDateModal();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () =>
+            document.removeEventListener('keydown', handleKeyDown);
+    }, [addDateModal.open]);
+
+    // Close edit date modal on Escape key
+    useEffect(() => {
+        if (!editDateModal.open) return;
+
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                closeEditDateModal();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () =>
+            document.removeEventListener('keydown', handleKeyDown);
+    }, [editDateModal.open]);
 
     useEffect(() => {
         if (flash?.success) {
@@ -968,9 +1134,9 @@ export default function Index({
                                                     Date
                                                 </th>
 
-                                                {/* <th className="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-                                                    Status
-                                                </th> */}
+                                                <th className="py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-400">
+                                                    {/* actions */}
+                                                </th>
                                             </tr>
                                         </thead>
 
@@ -993,18 +1159,17 @@ export default function Index({
                                                             : '—'}
                                                     </td>
 
-                                                    {/* <td className="py-2">
-                                                        <span
-                                                            className={
-                                                                'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
-                                                                (detail.status === 'Active'
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : 'bg-gray-300 text-gray-600')
-                                                            }
+                                                    <td className="py-2 text-right">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openEditDateModal(detail)}
+                                                            title="Edit Date"
+                                                            aria-label="Edit Date"
+                                                            className="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-yellow-600 hover:bg-yellow-50"
                                                         >
-                                                            {detail.status}
-                                                        </span>
-                                                    </td> */}
+                                                            <Pencil className="h-4 w-4" />
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -1012,7 +1177,19 @@ export default function Index({
                                 )}
                             </div>
 
-                            <div className="mt-5 flex justify-end">
+                            <div className="mt-5 flex items-center justify-between">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        dateModal.docId &&
+                                        openAddDateModal(dateModal.docId)
+                                    }
+                                    className="inline-flex cursor-pointer items-center gap-1 rounded-sm border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Date
+                                </button>
+
                                 <button
                                     type="button"
                                     onClick={closeDateModal}
@@ -1021,6 +1198,196 @@ export default function Index({
                                     Close
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Add Date Modal */}
+
+                {addDateModal.open && (
+                    <div
+                        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeAddDateModal}
+                    >
+                        <div
+                            className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Add Date
+                                </h2>
+
+                                <button
+                                    type="button"
+                                    onClick={closeAddDateModal}
+                                    className="cursor-pointer rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <form
+                                onSubmit={submitAddDate}
+                                className="mt-4 space-y-4 border-t border-gray-100 pt-4"
+                            >
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Date Type
+                                    </label>
+
+                                    <select
+                                        value={addDateData.dateTypeId}
+                                        onChange={(e) =>
+                                            setAddDateData(
+                                                'dateTypeId',
+                                                e.target.value
+                                            )
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">
+                                            Select date type
+                                        </option>
+
+                                        {dateTypes.map((dt) => (
+                                            <option
+                                                key={dt.dateTypeId}
+                                                value={dt.dateTypeId}
+                                            >
+                                                {dt.dateTypeName}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {addDateErrors.dateTypeId && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {addDateErrors.dateTypeId}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Date
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        value={addDateData.date_value}
+                                        onChange={(e) =>
+                                            setAddDateData(
+                                                'date_value',
+                                                e.target.value
+                                            )
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+
+                                    {addDateErrors.date_value && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {addDateErrors.date_value}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="mt-5 flex justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={closeAddDateModal}
+                                        className="inline-flex cursor-pointer items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        disabled={addDateProcessing}
+                                        className="inline-flex cursor-pointer items-center rounded-sm border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Date Modal */}
+
+                {editDateModal.open && (
+                    <div
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeEditDateModal}
+                    >
+                        <div
+                            className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Edit Date
+                                    </h2>
+                                    <p className="mt-0.5 text-sm text-gray-500">
+                                        {editDateModal.dateTypeName ?? '—'}
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeEditDateModal}
+                                    className="cursor-pointer rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <form
+                                onSubmit={submitEditDate}
+                                className="mt-4 space-y-4 border-t border-gray-100 pt-4"
+                            >
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Date
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        value={editDateData.date_value}
+                                        onChange={(e) =>
+                                            setEditDateData('date_value', e.target.value)
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+
+                                    {editDateErrors.date_value && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {editDateErrors.date_value}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="mt-5 flex justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={closeEditDateModal}
+                                        className="inline-flex cursor-pointer items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        disabled={editDateProcessing}
+                                        className="inline-flex cursor-pointer items-center rounded-sm border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                        {editDateProcessing ? 'Saving...' : 'Save'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 )}

@@ -149,6 +149,13 @@ class DateDetailController extends Controller
             $request->validated()
         );
 
+        if ($request->boolean('stay')) {
+            return back()->with(
+                'success',
+                'Date detail created.'
+            );
+        }
+
         return redirect()
             ->route('date-details.index')
             ->with(
@@ -222,12 +229,23 @@ class DateDetailController extends Controller
             $request->validated()
         );
 
+        if ($request->boolean('stay')) {
+            return back()->with(
+                'success',
+                'Date detail updated.'
+            );
+        }
+        
         return redirect()
             ->route('date-details.index')
             ->with(
                 'success',
                 'Date detail updated.'
             );
+        return back()->with(
+            'success',
+            'Date detail updated.'
+        );
     }
 
     /**

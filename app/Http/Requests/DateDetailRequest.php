@@ -36,6 +36,10 @@ class DateDetailRequest extends FormRequest
                 'required',
                 Rule::in(['Active', 'Inactive']),
             ],
+            'stay' => [
+                'sometimes',
+                'boolean',
+            ]
         ];
     }
 

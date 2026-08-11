@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\DateType;
 
 class DocumentController extends Controller
 {
@@ -64,6 +65,7 @@ class DocumentController extends Controller
                     'dateDetails' => $document->dateDetails->map(
                         fn ($detail) => [
                             'id' => $detail->id,
+                            'dateTypeId' => $detail->dateTypeId,
                             'dateTypeName' => $detail->dateType?->dateTypeName,
                             'date_value' => $detail->date_value?->format('Y-m-d'),
                             'status' => $detail->status,
@@ -73,9 +75,15 @@ class DocumentController extends Controller
             }
         );
 
+        $dateTypes = DateType::query()
+            ->where('status', 'Active')
+            ->orderBy('dateTypeName')
+            ->get(['dateTypeId', 'dateTypeName']);
+
         return Inertia::render('Documents/Index', [
             'documents' => $documents,
             'filters' => ['search' => $search],
+            'dateTypes' => $dateTypes,
         ]);
     }
 
