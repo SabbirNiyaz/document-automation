@@ -58,14 +58,6 @@ class DateTypeController extends Controller
     }
 
     /**
-     * Show the form for creating a new date type.
-     */
-    public function create(): Response
-    {
-        return Inertia::render('DateTypes/Create');
-    }
-
-    /**
      * Store a newly created date type.
      */
     public function store(
@@ -73,26 +65,11 @@ class DateTypeController extends Controller
     ): RedirectResponse {
         DateType::create($request->validated());
 
-        return redirect()
-            ->route('date-types.index')
+        return back()
             ->with(
                 'success',
                 'Date type created.'
             );
-    }
-
-    /**
-     * Show the form for editing the specified date type.
-     */
-    public function edit(
-        DateType $date_type
-    ): Response {
-        return Inertia::render(
-            'DateTypes/Edit',
-            [
-                'dateType' => $date_type,
-            ]
-        );
     }
 
     /**
@@ -106,8 +83,7 @@ class DateTypeController extends Controller
             $request->validated()
         );
 
-        return redirect()
-            ->route('date-types.index')
+        return back()
             ->with(
                 'success',
                 'Date type updated.'
@@ -122,8 +98,7 @@ class DateTypeController extends Controller
     ): RedirectResponse {
         $date_type->delete();
 
-        return redirect()
-            ->route('date-types.index')
+        return back()
             ->with(
                 'success',
                 'Date type deleted.'

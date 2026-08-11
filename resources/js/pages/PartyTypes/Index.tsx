@@ -1,5 +1,5 @@
 import { useState, FormEvent, useEffect } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import PartyTypeController from '@/actions/App/Http/Controllers/PartyTypeController';
 import { Info as InfoIcon, Pencil, Trash2, X } from 'lucide-react';
 
@@ -70,19 +70,110 @@ export default function Index({ partyTypes, filters }: Props) {
         setInfoPartyType(null);
     }
 
-    // Close modal on Escape
+    // Create modal
+    const [showCreate, setShowCreate] = useState(false);
+
+    const {
+        data: createData,
+        setData: setCreateData,
+        post: postCreate,
+        processing: createProcessing,
+        errors: createErrors,
+        reset: resetCreate,
+        clearErrors: clearCreateErrors,
+    } = useForm({
+        partyTypeName: '',
+        status: 'Active' as 'Active' | 'Inactive',
+    });
+
+    function openCreate() {
+        resetCreate();
+        clearCreateErrors();
+        setShowCreate(true);
+    }
+
+    function closeCreate() {
+        setShowCreate(false);
+        resetCreate();
+        clearCreateErrors();
+    }
+
+    function submitCreate(e: FormEvent) {
+        e.preventDefault();
+
+        postCreate(
+            PartyTypeController.store().url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeCreate(),
+            }
+        );
+    }
+
+    // Edit modal
+    const [editPartyType, setEditPartyType] = useState<PartyType | null>(null);
+
+    const {
+        data: editData,
+        setData: setEditData,
+        put: putEdit,
+        processing: editProcessing,
+        errors: editErrors,
+        reset: resetEdit,
+        clearErrors: clearEditErrors,
+    } = useForm({
+        partyTypeName: '',
+        status: 'Active' as 'Active' | 'Inactive',
+    });
+
+    function openEdit(partyType: PartyType) {
+        setEditPartyType(partyType);
+
+        setEditData({
+            partyTypeName: partyType.partyTypeName,
+            status: partyType.status,
+        });
+
+        clearEditErrors();
+    }
+
+    function closeEdit() {
+        setEditPartyType(null);
+        resetEdit();
+        clearEditErrors();
+    }
+
+    function submitEdit(e: FormEvent) {
+        e.preventDefault();
+
+        if (!editPartyType) {
+            return;
+        }
+
+        putEdit(
+            PartyTypeController.update(editPartyType.partyTypeId).url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeEdit(),
+            }
+        );
+    }
+
+    // Close modals on Escape
     useEffect(() => {
-        if (!infoPartyType) return;
+        if (!infoPartyType && !showCreate && !editPartyType) return;
 
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') {
                 closeInfo();
+                closeCreate();
+                closeEdit();
             }
         }
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [infoPartyType]);
+    }, [infoPartyType, showCreate, editPartyType]);
 
     // Search (server-side, applies to full dataset before pagination)
     function handleSearch(e: FormEvent) {
@@ -162,7 +253,10 @@ export default function Index({ partyTypes, filters }: Props) {
         }
 
         router.delete(
-            PartyTypeController.destroy(partyType.partyTypeId).url
+            PartyTypeController.destroy(partyType.partyTypeId).url,
+            {
+                preserveScroll: true,
+            }
         );
     }
 
@@ -196,12 +290,13 @@ export default function Index({ partyTypes, filters }: Props) {
                         </p>
                     </div>
 
-                    <Link
-                        href={PartyTypeController.create().url}
-                        className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+                    <button
+                        type="button"
+                        onClick={openCreate}
+                        className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto cursor-pointer"
                     >
                         Add Party Type
-                    </Link>
+                    </button>
                 </div>
 
                 {showSuccess && flash?.success && (
@@ -334,19 +429,16 @@ export default function Index({ partyTypes, filters }: Props) {
                                         <InfoIcon className="h-4 w-4" />
                                     </button>
 
-                                    <Link
-                                        href={
-                                            PartyTypeController.edit(
-                                                partyType.partyTypeId
-                                            ).url
-                                        }
+                                    <button
+                                        type="button"
+                                        onClick={() => openEdit(partyType)}
                                         title="Edit"
                                         aria-label="Edit"
                                         className="inline-flex items-center justify-center rounded-md bg-yellow-500 p-2
-                                        text-white hover:bg-yellow-600"
+                                        text-white hover:bg-yellow-600 cursor-pointer"
                                     >
                                         <Pencil className="h-4 w-4" />
-                                    </Link>
+                                    </button>
 
                                     <button
                                         type="button"
@@ -436,12 +528,9 @@ export default function Index({ partyTypes, filters }: Props) {
                                                 <InfoIcon className="h-4 w-4" />
                                             </button>
 
-                                            <Link
-                                                href={
-                                                    PartyTypeController.edit(
-                                                        partyType.partyTypeId
-                                                    ).url
-                                                }
+                                            <button
+                                                type="button"
+                                                onClick={() => openEdit(partyType)}
                                                 title="Edit"
                                                 aria-label="Edit"
                                                 className="ml-4 inline-flex items-center justify-center gap-1.5 rounded-md bg-yellow-500 p-2 
@@ -451,7 +540,7 @@ export default function Index({ partyTypes, filters }: Props) {
                                                 disabled:opacity-50 cursor-pointer"
                                             >
                                                 <Pencil className="h-4 w-4" />
-                                            </Link>
+                                            </button>
 
                                             <button
                                                 type="button"
@@ -595,6 +684,261 @@ export default function Index({ partyTypes, filters }: Props) {
                                 Close
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Modal */}
+            {showCreate && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeCreate}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    New Party Type
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    Create a new party type.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeCreate}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={submitCreate}
+                            className="mt-4 space-y-4"
+                        >
+                            {/* Party Type Name */}
+                            <div>
+                                <label
+                                    htmlFor="create-partyTypeName"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Name
+                                </label>
+
+                                <input
+                                    id="create-partyTypeName"
+                                    type="text"
+                                    value={createData.partyTypeName}
+                                    onChange={(e) =>
+                                        setCreateData(
+                                            'partyTypeName',
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="Enter party type name"
+                                    className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
+                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    autoFocus
+                                />
+
+                                {createErrors.partyTypeName && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {createErrors.partyTypeName}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label
+                                    htmlFor="create-status"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Status
+                                </label>
+
+                                <select
+                                    id="create-status"
+                                    value={createData.status}
+                                    onChange={(e) =>
+                                        setCreateData(
+                                            'status',
+                                            e.target.value as
+                                                | 'Active'
+                                                | 'Inactive'
+                                        )
+                                    }
+                                    className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
+                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+
+                                {createErrors.status && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {createErrors.status}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex items-center justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeCreate}
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={createProcessing}
+                                    className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
+                                    shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500
+                                    focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    {createProcessing ? 'Saving...' : 'Save'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editPartyType && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeEdit}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Edit Party Type
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    Update the party type information.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeEdit}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={submitEdit}
+                            className="mt-4 space-y-4"
+                        >
+                            {/* Party Type Name */}
+                            <div>
+                                <label
+                                    htmlFor="edit-partyTypeName"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Name
+                                </label>
+
+                                <input
+                                    id="edit-partyTypeName"
+                                    type="text"
+                                    value={editData.partyTypeName}
+                                    onChange={(e) =>
+                                        setEditData(
+                                            'partyTypeName',
+                                            e.target.value
+                                        )
+                                    }
+                                    className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
+                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    autoFocus
+                                />
+
+                                {editErrors.partyTypeName && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {editErrors.partyTypeName}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label
+                                    htmlFor="edit-status"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Status
+                                </label>
+
+                                <select
+                                    id="edit-status"
+                                    value={editData.status}
+                                    onChange={(e) =>
+                                        setEditData(
+                                            'status',
+                                            e.target.value as
+                                                | 'Active'
+                                                | 'Inactive'
+                                        )
+                                    }
+                                    className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
+                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+
+                                {editErrors.status && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {editErrors.status}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex items-center justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeEdit}
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={editProcessing}
+                                    className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
+                                    shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500
+                                    focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    {editProcessing ? 'Updating...' : 'Update'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

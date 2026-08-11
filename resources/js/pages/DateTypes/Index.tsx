@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import DateTypeController from '@/actions/App/Http/Controllers/DateTypeController';
 import { Info as InfoIcon, Pencil, Trash2, X } from 'lucide-react';
+
 interface User {
     id: number;
     name: string;
@@ -80,19 +81,113 @@ export default function Index({
         setInfoDateType(null);
     }
 
-    // Close modal on Escape
+    // Create modal
+    const [showCreate, setShowCreate] = useState(false);
+
+    const {
+        data: createData,
+        setData: setCreateData,
+        post: postCreate,
+        processing: createProcessing,
+        errors: createErrors,
+        reset: resetCreate,
+        clearErrors: clearCreateErrors,
+    } = useForm({
+        dateTypeName: '',
+        status: 'Active' as 'Active' | 'Inactive',
+    });
+
+    function openCreate() {
+        resetCreate();
+        clearCreateErrors();
+        setShowCreate(true);
+    }
+
+    function closeCreate() {
+        setShowCreate(false);
+        resetCreate();
+        clearCreateErrors();
+    }
+
+    function submitCreate(e: FormEvent) {
+        e.preventDefault();
+
+        postCreate(
+            DateTypeController.store().url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeCreate(),
+            }
+        );
+    }
+
+    // Edit modal
+    const [editDateType, setEditDateType] =
+        useState<DateType | null>(null);
+
+    const {
+        data: editData,
+        setData: setEditData,
+        put: putEdit,
+        processing: editProcessing,
+        errors: editErrors,
+        reset: resetEdit,
+        clearErrors: clearEditErrors,
+    } = useForm({
+        dateTypeName: '',
+        status: 'Active' as 'Active' | 'Inactive',
+    });
+
+    function openEdit(dateType: DateType) {
+        setEditDateType(dateType);
+
+        setEditData({
+            dateTypeName: dateType.dateTypeName,
+            status: dateType.status,
+        });
+
+        clearEditErrors();
+    }
+
+    function closeEdit() {
+        setEditDateType(null);
+        resetEdit();
+        clearEditErrors();
+    }
+
+    function submitEdit(e: FormEvent) {
+        e.preventDefault();
+
+        if (!editDateType) {
+            return;
+        }
+
+        putEdit(
+            DateTypeController.update(
+                editDateType.dateTypeId
+            ).url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeEdit(),
+            }
+        );
+    }
+
+    // Close modals on Escape
     useEffect(() => {
-        if (!infoDateType) return;
+        if (!infoDateType && !showCreate && !editDateType) return;
 
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') {
                 closeInfo();
+                closeCreate();
+                closeEdit();
             }
         }
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [infoDateType]);
+    }, [infoDateType, showCreate, editDateType]);
 
     function handleSearch(e: FormEvent) {
         e.preventDefault();
@@ -132,7 +227,10 @@ export default function Index({
         router.delete(
             DateTypeController.destroy(
                 dateType.dateTypeId
-            ).url
+            ).url,
+            {
+                preserveScroll: true,
+            }
         );
     }
 
@@ -169,15 +267,13 @@ export default function Index({
                         </p>
                     </div>
 
-                    <Link
-                        href={
-                            DateTypeController.create()
-                                .url
-                        }
-                        className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+                    <button
+                        type="button"
+                        onClick={openCreate}
+                        className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto cursor-pointer"
                     >
                         Add Date Type
-                    </Link>
+                    </button>
                 </div>
 
                 {/* Success Message */}
@@ -288,19 +384,16 @@ export default function Index({
                                             <InfoIcon className="h-4 w-4" />
                                         </button>
 
-                                        <Link
-                                            href={
-                                                DateTypeController.edit(
-                                                    dateType.dateTypeId
-                                                ).url
-                                            }
+                                        <button
+                                            type="button"
+                                            onClick={() => openEdit(dateType)}
                                             title="Edit"
                                             aria-label="Edit"
                                             className="ml-4 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2
-                                            text-white hover:bg-yellow-600"
+                                            text-white hover:bg-yellow-600 cursor-pointer"
                                         >
                                             <Pencil className="h-4 w-4" />
-                                        </Link>
+                                        </button>
 
                                         <button
                                             type="button"
@@ -400,18 +493,15 @@ export default function Index({
                                                     <InfoIcon className="h-4 w-4" />
                                                 </button>
 
-                                                <Link
-                                                    href={
-                                                        DateTypeController.edit(
-                                                            dateType.dateTypeId
-                                                        ).url
-                                                    }
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEdit(dateType)}
                                                     title="Edit"
                                                     aria-label="Edit"
-                                                    className="ml-4 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600"
+                                                    className="ml-4 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600 cursor-pointer"
                                                 >
                                                     <Pencil className="h-4 w-4" />
-                                                </Link>
+                                                </button>
 
                                                 <button
                                                     type="button"
@@ -557,6 +647,262 @@ export default function Index({
                                 Close
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Modal */}
+            {showCreate && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeCreate}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    New Date Type
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    Create a new date type.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeCreate}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={submitCreate}
+                            className="mt-4 space-y-4"
+                        >
+                            {/* Name */}
+                            <div>
+                                <label
+                                    htmlFor="create-dateTypeName"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Name
+                                </label>
+
+                                <input
+                                    id="create-dateTypeName"
+                                    type="text"
+                                    value={createData.dateTypeName}
+                                    onChange={(e) =>
+                                        setCreateData(
+                                            'dateTypeName',
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="Enter date type name"
+                                    className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    autoFocus
+                                />
+
+                                {createErrors.dateTypeName && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {createErrors.dateTypeName}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label
+                                    htmlFor="create-status"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Status
+                                </label>
+
+                                <select
+                                    id="create-status"
+                                    value={createData.status}
+                                    onChange={(e) =>
+                                        setCreateData(
+                                            'status',
+                                            e.target.value as
+                                                | 'Active'
+                                                | 'Inactive'
+                                        )
+                                    }
+                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+
+                                {createErrors.status && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {createErrors.status}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex items-center justify-end gap-3 pt-2">
+
+                                <button
+                                    type="button"
+                                    onClick={closeCreate}
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={createProcessing}
+                                    className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
+                                    shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                                    focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    {createProcessing ? 'Saving...' : 'Save'}
+                                </button>
+
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editDateType && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeEdit}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Edit Date Type
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    Update the date type details.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeEdit}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={submitEdit}
+                            className="mt-4 space-y-4"
+                        >
+                            {/* Name */}
+                            <div>
+                                <label
+                                    htmlFor="edit-dateTypeName"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Name
+                                </label>
+
+                                <input
+                                    id="edit-dateTypeName"
+                                    type="text"
+                                    value={editData.dateTypeName}
+                                    onChange={(e) =>
+                                        setEditData(
+                                            'dateTypeName',
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="Enter date type name"
+                                    className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    autoFocus
+                                />
+
+                                {editErrors.dateTypeName && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {editErrors.dateTypeName}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label
+                                    htmlFor="edit-status"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Status
+                                </label>
+
+                                <select
+                                    id="edit-status"
+                                    value={editData.status}
+                                    onChange={(e) =>
+                                        setEditData(
+                                            'status',
+                                            e.target.value as
+                                                | 'Active'
+                                                | 'Inactive'
+                                        )
+                                    }
+                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+
+                                {editErrors.status && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {editErrors.status}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex items-center justify-end gap-3 pt-2">
+
+                                <button
+                                    type="button"
+                                    onClick={closeEdit}
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={editProcessing}
+                                    className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
+                                    shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                                    focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    {editProcessing ? 'Updating...' : 'Update'}
+                                </button>
+
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

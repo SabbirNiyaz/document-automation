@@ -55,29 +55,19 @@ class PartyTypeController extends Controller
         ]);
     }
 
-    public function create(): Response
-    {
-        return Inertia::render('PartyTypes/Create');
-    }
-
     public function store(PartyTypeRequest $request): RedirectResponse
     {
         PartyType::create($request->validated());
 
-        return redirect()->route('party-types.index')
+        return back()
             ->with('success', 'Party type created.');
-    }
-
-    public function edit(PartyType $party_type): Response
-    {
-        return Inertia::render('PartyTypes/Edit', ['partyType' => $party_type]);
     }
 
     public function update(PartyTypeRequest $request, PartyType $party_type): RedirectResponse
     {
         $party_type->update($request->validated());
 
-        return redirect()->route('party-types.index')
+        return back()
             ->with('success', 'Party type updated.');
     }
 
@@ -85,7 +75,7 @@ class PartyTypeController extends Controller
     {
         $party_type->delete(); // soft delete — sets deleted_at
 
-        return redirect()->route('party-types.index')
+        return back()
             ->with('success', 'Party type deleted.');
     }
 }
