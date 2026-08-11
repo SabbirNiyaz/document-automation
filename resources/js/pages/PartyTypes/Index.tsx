@@ -159,21 +159,51 @@ export default function Index({ partyTypes, filters }: Props) {
         );
     }
 
+    // Delete modal
+    const [deletePartyType, setDeletePartyType] = useState<PartyType | null>(null);
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
+
+    function openDelete(partyType: PartyType) {
+        setDeletePartyType(partyType);
+    }
+
+    function closeDelete() {
+        setDeletePartyType(null);
+    }
+
+    function confirmDelete() {
+        if (!deletePartyType) {
+            return;
+        }
+
+        setDeleteProcessing(true);
+
+        router.delete(
+            PartyTypeController.destroy(deletePartyType.partyTypeId).url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeDelete(),
+                onFinish: () => setDeleteProcessing(false),
+            }
+        );
+    }
+
     // Close modals on Escape
     useEffect(() => {
-        if (!infoPartyType && !showCreate && !editPartyType) return;
+        if (!infoPartyType && !showCreate && !editPartyType && !deletePartyType) return;
 
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') {
                 closeInfo();
                 closeCreate();
                 closeEdit();
+                closeDelete();
             }
         }
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [infoPartyType, showCreate, editPartyType]);
+    }, [infoPartyType, showCreate, editPartyType, deletePartyType]);
 
     // Search (server-side, applies to full dataset before pagination)
     function handleSearch(e: FormEvent) {
@@ -237,25 +267,6 @@ export default function Index({ partyTypes, filters }: Props) {
             {
                 preserveState: true,
                 replace: true,
-            }
-        );
-    }
-
-    // Delete
-    function handleDelete(partyType: PartyType) {
-        if (
-            !confirm(
-                `Are you sure you want to delete "${partyType.partyTypeName}"? 
-                This can't be undone.`
-            )
-        ) {
-            return;
-        }
-
-        router.delete(
-            PartyTypeController.destroy(partyType.partyTypeId).url,
-            {
-                preserveScroll: true,
             }
         );
     }
@@ -442,7 +453,7 @@ export default function Index({ partyTypes, filters }: Props) {
 
                                     <button
                                         type="button"
-                                        onClick={() => handleDelete(partyType)}
+                                        onClick={() => openDelete(partyType)}
                                         title="Delete"
                                         aria-label="Delete"
                                         className="ml-4 inline-flex items-center justify-center rounded-md bg-red-500 p-2 
@@ -545,7 +556,7 @@ export default function Index({ partyTypes, filters }: Props) {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    handleDelete(partyType)
+                                                    openDelete(partyType)
                                                 }
                                                 title="Delete"
                                                 aria-label="Delete"
@@ -939,6 +950,73 @@ export default function Index({ partyTypes, filters }: Props) {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletePartyType && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeDelete}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Delete Party Type
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    This action cannot be undone.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeDelete}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <p className="mt-4 text-sm text-gray-700">
+                            Are you sure you want to delete{' '}
+                            <span className="font-medium text-gray-900">
+                                "{deletePartyType.partyTypeName}"
+                            </span>
+                            ? 
+                        </p>
+
+                        <div className="mt-5 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={closeDelete}
+                                disabled={deleteProcessing}
+                                className="text-sm font-medium text-gray-600 hover:text-gray-800 
+                                disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={confirmDelete}
+                                disabled={deleteProcessing}
+                                className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white 
+                                shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500
+                                focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                            >
+                                {deleteProcessing ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
