@@ -59,7 +59,8 @@ class PartyTypeController extends Controller
     {
         PartyType::create($request->validated());
 
-        return back()
+        return redirect()
+            ->route('party-types.index')
             ->with('success', 'Party type created.');
     }
 

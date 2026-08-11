@@ -36,6 +36,7 @@ interface Props {
 
     filters: {
         search: string;
+        status: string; // '' | 'Active' | 'Inactive'
     };
 }
 
@@ -46,6 +47,7 @@ export default function Index({
     const [search, setSearch] = useState(
         filters?.search ?? ''
     );
+    const [status, setStatus] = useState(filters?.status || 'all');
 
     const { flash } = usePage().props as {
         flash?: {
@@ -173,28 +175,62 @@ export default function Index({
         );
     }
 
+    // Delete modal
+    const [deleteDateType, setDeleteDateType] = useState<DateType | null>(null);
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
+
+    function openDelete(dateType: DateType) {
+        setDeleteDateType(dateType);
+    }
+
+    function closeDelete() {
+        setDeleteDateType(null);
+    }
+
+    function confirmDelete() {
+        if (!deleteDateType) {
+            return;
+        }
+
+        setDeleteProcessing(true);
+
+        router.delete(
+            DateTypeController.destroy(deleteDateType.dateTypeId).url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeDelete(),
+                onFinish: () => setDeleteProcessing(false),
+            }
+        );
+    }
+
     // Close modals on Escape
     useEffect(() => {
-        if (!infoDateType && !showCreate && !editDateType) return;
+        if (!infoDateType && !showCreate && !editDateType && !deleteDateType) return;
 
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') {
                 closeInfo();
                 closeCreate();
                 closeEdit();
+                closeDelete();
             }
         }
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [infoDateType, showCreate, editDateType]);
+    }, [infoDateType, showCreate, editDateType, deleteDateType]);
 
+    // Search (server-side, applies to full dataset before pagination)
     function handleSearch(e: FormEvent) {
         e.preventDefault();
 
         router.get(
             DateTypeController.index().url,
-            { search },
+            {
+                search,
+                status: status !== 'all' ? status : undefined,
+            },
             {
                 preserveState: true,
                 replace: true,
@@ -202,12 +238,15 @@ export default function Index({
         );
     }
 
-    function handleReset() {
+    // Reset just the search term, keep status as-is
+    function handleResetSearch() {
         setSearch('');
 
         router.get(
             DateTypeController.index().url,
-            {},
+            {
+                status: status !== 'all' ? status : undefined,
+            },
             {
                 preserveState: true,
                 replace: true,
@@ -215,21 +254,35 @@ export default function Index({
         );
     }
 
-    function handleDelete(dateType: DateType) {
-        if (
-            !confirm(
-                `Are you sure you want to delete "${dateType.dateTypeName}"? This can't be undone.`
-            )
-        ) {
-            return;
-        }
+    // Status dropdown fires immediately, keeps current search term
+    function handleStatusChange(value: string) {
+        setStatus(value);
 
-        router.delete(
-            DateTypeController.destroy(
-                dateType.dateTypeId
-            ).url,
+        router.get(
+            DateTypeController.index().url,
             {
-                preserveScroll: true,
+                search,
+                status: value !== 'all' ? value : undefined,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    }
+
+    // Reset just the status filter, keep search as-is
+    function handleResetStatus() {
+        setStatus('all');
+
+        router.get(
+            DateTypeController.index().url,
+            {
+                search,
+            },
+            {
+                preserveState: true,
+                replace: true,
             }
         );
     }
@@ -284,41 +337,79 @@ export default function Index({
                         </div>
                     )}
 
-                {/* Search */}
-                <form
-                    onSubmit={handleSearch}
-                    className="flex flex-col gap-2 sm:flex-row"
-                >
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) =>
-                            setSearch(e.target.value)
-                        }
-                        placeholder="Search by Name..."
-                        className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:max-w-xs"
-                    />
+                {/* Search + Status filters */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
-                    <div className="flex gap-2">
+                    {/* Search group */}
+                    <form
+                        onSubmit={handleSearch}
+                        className="flex items-center gap-2"
+                    >
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) =>
+                                setSearch(e.target.value)
+                            }
+                            placeholder="Search by Name..."
+                            className="w-full rounded-sm border-gray-300 text-sm shadow-sm 
+                            px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:w-64"
+                        />
+
                         <button
                             type="submit"
-                            className="flex-1 cursor-pointer rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:flex-none"
+                            className="shrink-0 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
+                             font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer"
                         >
                             Search
                         </button>
 
-                        {(search ||
-                            filters?.search) && (
-                                <button
-                                    type="button"
-                                    onClick={handleReset}
-                                    className="flex-1 cursor-pointer rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 sm:flex-none"
-                                >
-                                    Reset
-                                </button>
-                            )}
+                        {(search || filters?.search) && (
+                            <button
+                                type="button"
+                                onClick={handleResetSearch}
+                                className="shrink-0 inline-flex items-center justify-center rounded-sm border border-gray-300 
+                                bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                title="Clear search"
+                                aria-label="Clear search"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </form>
+
+                    {/* Status filter group */}
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="status-filter" className="text-sm text-gray-500 shrink-0">
+                            Status:
+                        </label>
+
+                        <select
+                            id="status-filter"
+                            value={status}
+                            onChange={(e) => handleStatusChange(e.target.value)}
+                            className="rounded-sm border-gray-300 text-sm shadow-sm px-3 py-2 
+                            focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
+                        >
+                            <option value="all">All</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+
+                        {status !== 'all' && (
+                            <button
+                                type="button"
+                                onClick={handleResetStatus}
+                                className="shrink-0 inline-flex items-center justify-center rounded-sm border border-gray-300 
+                                bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                title="Clear status filter"
+                                aria-label="Clear status filter"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
                     </div>
-                </form>
+                </div>
 
                 {/* Empty State */}
                 {dateTypes.data.length === 0 && (
@@ -389,7 +480,7 @@ export default function Index({
                                             onClick={() => openEdit(dateType)}
                                             title="Edit"
                                             aria-label="Edit"
-                                            className="ml-4 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2
+                                            className="inline-flex items-center justify-center rounded-md bg-yellow-500 p-2
                                             text-white hover:bg-yellow-600 cursor-pointer"
                                         >
                                             <Pencil className="h-4 w-4" />
@@ -397,11 +488,7 @@ export default function Index({
 
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                handleDelete(
-                                                    dateType
-                                                )
-                                            }
+                                            onClick={() => openDelete(dateType)}
                                             title="Delete"
                                             aria-label="Delete"
                                             className="ml-4 inline-flex items-center justify-center rounded-md bg-red-500 p-2 
@@ -505,11 +592,7 @@ export default function Index({
 
                                                 <button
                                                     type="button"
-                                                    onClick={() =>
-                                                        handleDelete(
-                                                            dateType
-                                                        )
-                                                    }
+                                                    onClick={() => openDelete(dateType)}
                                                     title="Delete"
                                                     aria-label="Delete"
                                                     className="ml-4 inline-flex items-center justify-center rounded-md bg-red-500 p-2 text-white hover:bg-red-600 cursor-pointer"
@@ -903,6 +986,73 @@ export default function Index({
 
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteDateType && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeDelete}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Delete Date Type
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    This action cannot be undone.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeDelete}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <p className="mt-4 text-sm text-gray-700">
+                            Are you sure you want to delete{' '}
+                            <span className="font-medium text-gray-900">
+                                "{deleteDateType.dateTypeName}"
+                            </span>
+                            ?
+                        </p>
+
+                        <div className="mt-5 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={closeDelete}
+                                disabled={deleteProcessing}
+                                className="text-sm font-medium text-gray-600 hover:text-gray-800 
+                                disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={confirmDelete}
+                                disabled={deleteProcessing}
+                                className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white 
+                                shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500
+                                focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                            >
+                                {deleteProcessing ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

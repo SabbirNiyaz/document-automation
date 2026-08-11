@@ -17,6 +17,7 @@ class DateTypeController extends Controller
     public function index(Request $request): Response
     {
         $search = $request->string('search')->toString();
+        $status = $request->string('status')->toString(); // '', 'Active', or 'Inactive'
 
         $dateTypes = DateType::with([
                 'createdBy:id,name',
@@ -29,6 +30,10 @@ class DateTypeController extends Controller
                     'like',
                     "%{$search}%"
                 )
+            )
+            ->when(
+                $status && in_array($status, ['Active', 'Inactive']),
+                fn ($q) => $q->where('status', $status)
             )
             ->orderByDesc('dateTypeId')
             ->paginate(10)
@@ -53,6 +58,7 @@ class DateTypeController extends Controller
 
             'filters' => [
                 'search' => $search,
+                'status' => $status,
             ],
         ]);
     }
@@ -65,7 +71,8 @@ class DateTypeController extends Controller
     ): RedirectResponse {
         DateType::create($request->validated());
 
-        return back()
+        return redirect()
+            ->route('date-types.index')
             ->with(
                 'success',
                 'Date type created.'

@@ -19,6 +19,7 @@ class DateDetailController extends Controller
     public function index(Request $request): Response
     {
         $search = $request->string('search')->toString();
+        $status = $request->string('status')->toString();
 
         $dateDetails = DateDetail::with([
             'dateType:dateTypeId,dateTypeName',
@@ -49,6 +50,10 @@ class DateDetailController extends Controller
                                 )
                         );
                 })
+            )
+            ->when(
+                $status,
+                fn ($q) => $q->where('status', $status)
             )
             ->orderByDesc('id')
             ->paginate(10)
@@ -103,20 +108,6 @@ class DateDetailController extends Controller
             ]
         );
 
-        return Inertia::render('DateDetails/Index', [
-            'dateDetails' => $dateDetails,
-
-            'filters' => [
-                'search' => $search,
-            ],
-        ]);
-    }
-
-    /**
-     * Show the form for creating a new date detail.
-     */
-    public function create(): Response
-    {
         $dateTypes = DateType::query()
             ->where('status', 'Active')
             ->orderBy('dateTypeName')
@@ -133,9 +124,16 @@ class DateDetailController extends Controller
                 'title',
             ]);
 
-        return Inertia::render('DateDetails/Create', [
+        return Inertia::render('DateDetails/Index', [
+            'dateDetails' => $dateDetails,
+
             'dateTypes' => $dateTypes,
             'documents' => $documents,
+
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+            ],
         ]);
     }
 
@@ -165,60 +163,6 @@ class DateDetailController extends Controller
     }
 
     /**
-     * Show the form for editing the specified date detail.
-     */
-    public function edit(
-        DateDetail $date_detail
-    ): Response {
-        $dateTypes = DateType::query()
-            ->where('status', 'Active')
-            ->orWhere(
-                'dateTypeId',
-                $date_detail->dateTypeId
-            )
-            ->orderBy('dateTypeName')
-            ->get([
-                'dateTypeId',
-                'dateTypeName',
-            ]);
-
-        $documents = Document::query()
-            ->where('status', 'Active')
-            ->orWhere(
-                'docId',
-                $date_detail->docId
-            )
-            ->orderBy('title')
-            ->get([
-                'docId',
-                'title',
-            ]);
-
-        return Inertia::render('DateDetails/Edit', [
-            'dateDetail' => [
-                'id' =>
-                    $date_detail->id,
-
-                'dateTypeId' =>
-                    $date_detail->dateTypeId,
-
-                'docId' =>
-                    $date_detail->docId,
-
-                'date_value' =>
-                    $date_detail->date_value?->format('Y-m-d'),
-
-                'status' =>
-                    $date_detail->status,
-            ],
-
-            'dateTypes' => $dateTypes,
-
-            'documents' => $documents,
-        ]);
-    }
-
-    /**
      * Update the specified date detail.
      */
     public function update(
@@ -235,17 +179,18 @@ class DateDetailController extends Controller
                 'Date detail updated.'
             );
         }
-        
-        return redirect()
-            ->route('date-details.index')
+
+        return back()
             ->with(
                 'success',
                 'Date detail updated.'
             );
-        return back()->with(
-            'success',
-            'Date detail updated.'
-        );
+        // return redirect()
+        //     ->route('date-details.index')
+        //     ->with(
+        //         'success',
+        //         'Date detail updated.'
+        //     );
     }
 
     /**
@@ -256,8 +201,7 @@ class DateDetailController extends Controller
     ): RedirectResponse {
         $date_detail->delete();
 
-        return redirect()
-            ->route('date-details.index')
+        return back()
             ->with(
                 'success',
                 'Date detail deleted.'

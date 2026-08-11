@@ -20,6 +20,10 @@ class DocumentTypeController extends Controller
             ->string('search')
             ->toString();
 
+        $status = $request
+            ->string('status')
+            ->toString(); // '', 'Active', or 'Inactive'
+
         $documentTypes = DocumentType::with([
                 'createdBy:id,name',
                 'updatedBy:id,name',
@@ -31,6 +35,10 @@ class DocumentTypeController extends Controller
                     'like',
                     "%{$search}%"
                 )
+            )
+            ->when(
+                $status,
+                fn ($q) => $q->where('status', $status)
             )
             ->orderByDesc('document_id')
             ->paginate(10)
@@ -68,6 +76,7 @@ class DocumentTypeController extends Controller
 
                 'filters' => [
                     'search' => $search,
+                    'status' => $status,
                 ],
             ]
         );

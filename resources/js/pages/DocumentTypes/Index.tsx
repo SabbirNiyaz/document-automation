@@ -1,16 +1,5 @@
-import {
-    FormEvent,
-    useEffect,
-    useState,
-} from 'react';
-
-import {
-    Head,
-    Link,
-    router,
-    usePage,
-} from '@inertiajs/react';
-
+import { FormEvent, useEffect, useState } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import DocumentTypeController from '@/actions/App/Http/Controllers/DocumentTypeController';
 import { Info as InfoIcon, Pencil, Trash2, X } from 'lucide-react';
 
@@ -22,7 +11,6 @@ interface User {
 interface DocumentType {
     document_id: number;
     document_name: string;
-
     status: 'Active' | 'Inactive';
 
     created_at: string | null;
@@ -48,6 +36,7 @@ interface Props {
 
     filters: {
         search: string;
+        status: string; // '' | 'Active' | 'Inactive'
     };
 }
 
@@ -58,6 +47,7 @@ export default function Index({
     const [search, setSearch] = useState(
         filters?.search ?? ''
     );
+    const [status, setStatus] = useState(filters?.status || 'all');
 
     const { flash } = usePage().props as {
         flash?: {
@@ -77,8 +67,7 @@ export default function Index({
                 3000
             );
 
-            return () =>
-                clearTimeout(timer);
+            return () => clearTimeout(timer);
         }
     }, [flash?.success]);
 
@@ -94,28 +83,154 @@ export default function Index({
         setInfoDocumentType(null);
     }
 
-    // Close modal on Escape
+    // Create modal
+    const [showCreate, setShowCreate] = useState(false);
+
+    const {
+        data: createData,
+        setData: setCreateData,
+        post: postCreate,
+        processing: createProcessing,
+        errors: createErrors,
+        reset: resetCreate,
+        clearErrors: clearCreateErrors,
+    } = useForm({
+        document_name: '',
+        status: 'Active' as 'Active' | 'Inactive',
+    });
+
+    function openCreate() {
+        resetCreate();
+        clearCreateErrors();
+        setShowCreate(true);
+    }
+
+    function closeCreate() {
+        setShowCreate(false);
+        resetCreate();
+        clearCreateErrors();
+    }
+
+    function submitCreate(e: FormEvent) {
+        e.preventDefault();
+
+        postCreate(
+            DocumentTypeController.store().url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeCreate(),
+            }
+        );
+    }
+
+    // Edit modal
+    const [editDocumentType, setEditDocumentType] =
+        useState<DocumentType | null>(null);
+
+    const {
+        data: editData,
+        setData: setEditData,
+        put: putEdit,
+        processing: editProcessing,
+        errors: editErrors,
+        reset: resetEdit,
+        clearErrors: clearEditErrors,
+    } = useForm({
+        document_name: '',
+        status: 'Active' as 'Active' | 'Inactive',
+    });
+
+    function openEdit(documentType: DocumentType) {
+        setEditDocumentType(documentType);
+
+        setEditData({
+            document_name: documentType.document_name,
+            status: documentType.status,
+        });
+
+        clearEditErrors();
+    }
+
+    function closeEdit() {
+        setEditDocumentType(null);
+        resetEdit();
+        clearEditErrors();
+    }
+
+    function submitEdit(e: FormEvent) {
+        e.preventDefault();
+
+        if (!editDocumentType) {
+            return;
+        }
+
+        putEdit(
+            DocumentTypeController.update(
+                editDocumentType.document_id
+            ).url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeEdit(),
+            }
+        );
+    }
+
+    // Delete modal
+    const [deleteDocumentType, setDeleteDocumentType] = useState<DocumentType | null>(null);
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
+
+    function openDelete(documentType: DocumentType) {
+        setDeleteDocumentType(documentType);
+    }
+
+    function closeDelete() {
+        setDeleteDocumentType(null);
+    }
+
+    function confirmDelete() {
+        if (!deleteDocumentType) {
+            return;
+        }
+
+        setDeleteProcessing(true);
+
+        router.delete(
+            DocumentTypeController.destroy(deleteDocumentType.document_id).url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeDelete(),
+                onFinish: () => setDeleteProcessing(false),
+            }
+        );
+    }
+
+    // Close modals on Escape
     useEffect(() => {
-        if (!infoDocumentType) return;
+        if (!infoDocumentType && !showCreate && !editDocumentType && !deleteDocumentType) return;
 
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') {
                 closeInfo();
+                closeCreate();
+                closeEdit();
+                closeDelete();
             }
         }
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [infoDocumentType]);
+    }, [infoDocumentType, showCreate, editDocumentType, deleteDocumentType]);
 
-    function handleSearch(
-        e: FormEvent
-    ) {
+    // Search (server-side, applies to full dataset before pagination)
+    function handleSearch(e: FormEvent) {
         e.preventDefault();
 
         router.get(
             DocumentTypeController.index().url,
-            { search },
+            {
+                search,
+                status: status !== 'all' ? status : undefined,
+            },
             {
                 preserveState: true,
                 replace: true,
@@ -123,12 +238,15 @@ export default function Index({
         );
     }
 
-    function handleReset() {
+    // Reset just the search term, keep status as-is
+    function handleResetSearch() {
         setSearch('');
 
         router.get(
             DocumentTypeController.index().url,
-            {},
+            {
+                status: status !== 'all' ? status : undefined,
+            },
             {
                 preserveState: true,
                 replace: true,
@@ -136,37 +254,51 @@ export default function Index({
         );
     }
 
-    function handleDelete(
-        documentType: DocumentType
-    ) {
-        if (
-            !confirm(
-                `Are you sure you want to delete "${documentType.document_name}"? This can't be undone.`
-            )
-        ) {
-            return;
-        }
+    // Status dropdown fires immediately, keeps current search term
+    function handleStatusChange(value: string) {
+        setStatus(value);
 
-        router.delete(
-            DocumentTypeController.destroy(
-                documentType.document_id
-            ).url
+        router.get(
+            DocumentTypeController.index().url,
+            {
+                search,
+                status: value !== 'all' ? value : undefined,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
         );
     }
 
-    function formatDate(
-        value: string | null
-    ) {
+    // Reset just the status filter, keep search as-is
+    function handleResetStatus() {
+        setStatus('all');
+
+        router.get(
+            DocumentTypeController.index().url,
+            {
+                search,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    }
+
+    function formatDate(value: string | null) {
         return value
-            ? new Date(
-                  value
-              ).toLocaleString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-              })
+            ? new Date(value).toLocaleString(
+                'en-US',
+                {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }
+            )
             : '—';
     }
 
@@ -178,7 +310,6 @@ export default function Index({
 
                 {/* Header */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
                     <div>
                         <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
                             Document Types
@@ -189,16 +320,13 @@ export default function Index({
                         </p>
                     </div>
 
-                    <Link
-                        href={
-                            DocumentTypeController
-                                .create()
-                                .url
-                        }
-                        className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+                    <button
+                        type="button"
+                        onClick={openCreate}
+                        className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto cursor-pointer"
                     >
                         Add Document Type
-                    </Link>
+                    </button>
                 </div>
 
                 {/* Success Message */}
@@ -209,61 +337,90 @@ export default function Index({
                         </div>
                     )}
 
-                {/* Search */}
-                <form
-                    onSubmit={handleSearch}
-                    className="flex flex-col gap-2 sm:flex-row"
-                >
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) =>
-                            setSearch(
-                                e.target.value
-                            )
-                        }
-                        placeholder="Search by Name..."
-                        className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:max-w-xs"
-                    />
+                {/* Search + Status filters */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
-                    <div className="flex gap-2">
+                    {/* Search group */}
+                    <form
+                        onSubmit={handleSearch}
+                        className="flex items-center gap-2"
+                    >
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) =>
+                                setSearch(e.target.value)
+                            }
+                            placeholder="Search by Name..."
+                            className="w-full rounded-sm border-gray-300 text-sm shadow-sm 
+                            px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:w-64"
+                        />
 
                         <button
                             type="submit"
-                            className="flex-1 cursor-pointer rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:flex-none"
+                            className="shrink-0 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm
+                             font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer"
                         >
                             Search
                         </button>
 
-                        {(search ||
-                            filters?.search) && (
+                        {(search || filters?.search) && (
                             <button
                                 type="button"
-                                onClick={
-                                    handleReset
-                                }
-                                className="flex-1 cursor-pointer rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 sm:flex-none"
+                                onClick={handleResetSearch}
+                                className="shrink-0 inline-flex items-center justify-center rounded-sm border border-gray-300 
+                                bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                title="Clear search"
+                                aria-label="Clear search"
                             >
-                                Reset
+                                <X className="h-4 w-4" />
                             </button>
                         )}
+                    </form>
 
+                    {/* Status filter group */}
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="status-filter" className="text-sm text-gray-500 shrink-0">
+                            Status:
+                        </label>
+
+                        <select
+                            id="status-filter"
+                            value={status}
+                            onChange={(e) => handleStatusChange(e.target.value)}
+                            className="rounded-sm border-gray-300 text-sm shadow-sm px-3 py-2 
+                            focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
+                        >
+                            <option value="all">All</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+
+                        {status !== 'all' && (
+                            <button
+                                type="button"
+                                onClick={handleResetStatus}
+                                className="shrink-0 inline-flex items-center justify-center rounded-sm border border-gray-300 
+                                bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                title="Clear status filter"
+                                aria-label="Clear status filter"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
                     </div>
-                </form>
+                </div>
 
                 {/* Empty State */}
-                {documentTypes.data.length ===
-                    0 && (
+                {documentTypes.data.length === 0 && (
                     <div className="rounded-sm border border-sidebar-border/70 bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm">
                         No document types found.
                     </div>
                 )}
 
                 {/* Mobile / Tablet */}
-                {documentTypes.data.length >
-                    0 && (
+                {documentTypes.data.length > 0 && (
                     <div className="flex flex-col gap-3 lg:hidden">
-
                         {documentTypes.data.map(
                             (documentType) => (
                                 <div
@@ -272,9 +429,7 @@ export default function Index({
                                     }
                                     className="rounded-sm border border-sidebar-border/70 bg-white p-4 shadow-sm"
                                 >
-
                                     <div className="flex items-start justify-between gap-3">
-
                                         <div>
                                             <p className="text-xs text-gray-400">
                                                 ID:{' '}
@@ -294,7 +449,7 @@ export default function Index({
                                             className={
                                                 'inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ' +
                                                 (documentType.status ===
-                                                'Active'
+                                                    'Active'
                                                     ? 'bg-green-100 text-green-800'
                                                     : 'bg-gray-300 text-gray-600')
                                             }
@@ -303,7 +458,6 @@ export default function Index({
                                                 documentType.status
                                             }
                                         </span>
-
                                     </div>
 
                                     {/* Actions */}
@@ -314,59 +468,50 @@ export default function Index({
                                             onClick={() => openInfo(documentType)}
                                             title="Info"
                                             aria-label="Info"
-                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-gray-500 p-2
+                                            className="inline-flex items-center justify-center rounded-md bg-gray-500 p-2
                                             text-white shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 
                                             focus:ring-gray-500 focus:ring-offset-2 cursor-pointer"
                                         >
                                             <InfoIcon className="h-4 w-4" />
                                         </button>
 
-                                        <Link
-                                            href={
-                                                DocumentTypeController.edit(
-                                                    documentType.document_id
-                                                ).url
-                                            }
+                                        <button
+                                            type="button"
+                                            onClick={() => openEdit(documentType)}
                                             title="Edit"
                                             aria-label="Edit"
-                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-yellow-500 p-2 text-white shadow-sm hover:bg-yellow-600"
+                                            className="inline-flex items-center justify-center rounded-md bg-yellow-500 p-2
+                                            text-white hover:bg-yellow-600 cursor-pointer"
                                         >
                                             <Pencil className="h-4 w-4" />
-                                        </Link>
+                                        </button>
 
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                handleDelete(
-                                                    documentType
-                                                )
-                                            }
+                                            onClick={() => openDelete(documentType)}
                                             title="Delete"
                                             aria-label="Delete"
-                                            className="inline-flex flex-1 items-center justify-center rounded-md bg-red-500 p-2 text-white shadow-sm hover:bg-red-600"
+                                            className="ml-4 inline-flex items-center justify-center rounded-md bg-red-500 p-2 
+                                            text-white hover:bg-red-600 cursor-pointer"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </button>
 
                                     </div>
-
                                 </div>
                             )
                         )}
-
                     </div>
                 )}
 
                 {/* Desktop Table */}
-                {documentTypes.data.length >
-                    0 && (
+                {documentTypes.data.length > 0 && (
                     <div className="hidden overflow-x-auto rounded-sm border border-sidebar-border/70 bg-white shadow-sm lg:block">
 
                         <table className="min-w-full divide-y divide-gray-200">
 
                             <thead className="bg-gray-50">
                                 <tr>
-
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                                         ID
                                     </th>
@@ -382,7 +527,6 @@ export default function Index({
                                     <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">
                                         Actions
                                     </th>
-
                                 </tr>
                             </thead>
 
@@ -395,7 +539,6 @@ export default function Index({
                                                 documentType.document_id
                                             }
                                         >
-
                                             <td className="px-4 py-3 text-sm text-gray-500">
                                                 {
                                                     documentType.document_id
@@ -413,7 +556,7 @@ export default function Index({
                                                     className={
                                                         'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
                                                         (documentType.status ===
-                                                        'Active'
+                                                            'Active'
                                                             ? 'bg-green-100 text-green-800'
                                                             : 'bg-gray-300 text-gray-600')
                                                     }
@@ -437,26 +580,19 @@ export default function Index({
                                                     <InfoIcon className="h-4 w-4" />
                                                 </button>
 
-                                                <Link
-                                                    href={
-                                                        DocumentTypeController.edit(
-                                                            documentType.document_id
-                                                        ).url
-                                                    }
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEdit(documentType)}
                                                     title="Edit"
                                                     aria-label="Edit"
-                                                    className="ml-4 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600"
+                                                    className="ml-4 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600 cursor-pointer"
                                                 >
                                                     <Pencil className="h-4 w-4" />
-                                                </Link>
+                                                </button>
 
                                                 <button
                                                     type="button"
-                                                    onClick={() =>
-                                                        handleDelete(
-                                                            documentType
-                                                        )
-                                                    }
+                                                    onClick={() => openDelete(documentType)}
                                                     title="Delete"
                                                     aria-label="Delete"
                                                     className="ml-4 inline-flex items-center justify-center rounded-md bg-red-500 p-2 text-white hover:bg-red-600 cursor-pointer"
@@ -465,7 +601,6 @@ export default function Index({
                                                 </button>
 
                                             </td>
-
                                         </tr>
                                     )
                                 )}
@@ -476,10 +611,8 @@ export default function Index({
                 )}
 
                 {/* Pagination */}
-                {documentTypes.links.length >
-                    3 && (
+                {documentTypes.links.length > 3 && (
                     <div className="flex flex-wrap justify-center gap-1 sm:justify-end">
-
                         {documentTypes.links.map(
                             (link, i) => (
                                 <Link
@@ -502,7 +635,6 @@ export default function Index({
                                 />
                             )
                         )}
-
                     </div>
                 )}
 
@@ -601,6 +733,329 @@ export default function Index({
                     </div>
                 </div>
             )}
+
+            {/* Create Modal */}
+            {showCreate && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeCreate}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    New Document Type
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    Create a new document type.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeCreate}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={submitCreate}
+                            className="mt-4 space-y-4"
+                        >
+                            {/* Name */}
+                            <div>
+                                <label
+                                    htmlFor="create-document_name"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Name
+                                </label>
+
+                                <input
+                                    id="create-document_name"
+                                    type="text"
+                                    value={createData.document_name}
+                                    onChange={(e) =>
+                                        setCreateData(
+                                            'document_name',
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="Enter document type name"
+                                    className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    autoFocus
+                                />
+
+                                {createErrors.document_name && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {createErrors.document_name}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label
+                                    htmlFor="create-status"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Status
+                                </label>
+
+                                <select
+                                    id="create-status"
+                                    value={createData.status}
+                                    onChange={(e) =>
+                                        setCreateData(
+                                            'status',
+                                            e.target.value as
+                                                | 'Active'
+                                                | 'Inactive'
+                                        )
+                                    }
+                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+
+                                {createErrors.status && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {createErrors.status}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex items-center justify-end gap-3 pt-2">
+
+                                <button
+                                    type="button"
+                                    onClick={closeCreate}
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={createProcessing}
+                                    className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
+                                    shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                                    focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    {createProcessing ? 'Saving...' : 'Save'}
+                                </button>
+
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editDocumentType && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeEdit}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Edit Document Type
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    Update the document type details.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeEdit}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={submitEdit}
+                            className="mt-4 space-y-4"
+                        >
+                            {/* Name */}
+                            <div>
+                                <label
+                                    htmlFor="edit-document_name"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Name
+                                </label>
+
+                                <input
+                                    id="edit-document_name"
+                                    type="text"
+                                    value={editData.document_name}
+                                    onChange={(e) =>
+                                        setEditData(
+                                            'document_name',
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="Enter document type name"
+                                    className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    autoFocus
+                                />
+
+                                {editErrors.document_name && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {editErrors.document_name}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label
+                                    htmlFor="edit-status"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Status
+                                </label>
+
+                                <select
+                                    id="edit-status"
+                                    value={editData.status}
+                                    onChange={(e) =>
+                                        setEditData(
+                                            'status',
+                                            e.target.value as
+                                                | 'Active'
+                                                | 'Inactive'
+                                        )
+                                    }
+                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+
+                                {editErrors.status && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {editErrors.status}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex items-center justify-end gap-3 pt-2">
+
+                                <button
+                                    type="button"
+                                    onClick={closeEdit}
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={editProcessing}
+                                    className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
+                                    shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+                                    focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    {editProcessing ? 'Updating...' : 'Update'}
+                                </button>
+
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteDocumentType && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={closeDelete}
+                >
+                    <div
+                        className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Delete Document Type
+                                </h2>
+
+                                <p className="mt-0.5 text-sm text-gray-500">
+                                    This action cannot be undone.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeDelete}
+                                className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                hover:text-gray-600 focus:outline-none focus:ring-2 
+                                focus:ring-indigo-500 cursor-pointer"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <p className="mt-4 text-sm text-gray-700">
+                            Are you sure you want to delete{' '}
+                            <span className="font-medium text-gray-900">
+                                "{deleteDocumentType.document_name}"
+                            </span>
+                            ?
+                        </p>
+
+                        <div className="mt-5 flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={closeDelete}
+                                disabled={deleteProcessing}
+                                className="text-sm font-medium text-gray-600 hover:text-gray-800 
+                                disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={confirmDelete}
+                                disabled={deleteProcessing}
+                                className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white 
+                                shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500
+                                focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                            >
+                                {deleteProcessing ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
@@ -609,8 +1064,7 @@ Index.layout = {
     breadcrumbs: [
         {
             title: 'Document Types',
-            href: DocumentTypeController
-                .index().url,
+            href: DocumentTypeController.index().url,
         },
     ],
 };

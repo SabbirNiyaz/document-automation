@@ -60,20 +60,6 @@ class PartyMasterController extends Controller
             ]
         );
 
-        return Inertia::render('PartyMasters/Index', [
-            'partyMasters' => $partyMasters,
-
-            'filters' => [
-                'search' => $search,
-            ],
-        ]);
-    }
-
-    /**
-     * Show create form.
-     */
-    public function create(): Response
-    {
         $partyTypes = PartyType::query()
             ->where('status', 'Active')
             ->orderBy('partyTypeName')
@@ -82,8 +68,13 @@ class PartyMasterController extends Controller
                 'partyTypeName',
             ]);
 
-        return Inertia::render('PartyMasters/Create', [
+        return Inertia::render('PartyMasters/Index', [
+            'partyMasters' => $partyMasters,
             'partyTypes' => $partyTypes,
+
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 
@@ -106,33 +97,6 @@ class PartyMasterController extends Controller
     }
 
     /**
-     * Show edit form.
-     */
-    public function edit(
-        PartyMaster $party_master
-    ): Response {
-        $partyTypes = PartyType::query()
-            ->where('status', 'Active')
-            ->orWhere(
-                'partyTypeId',
-                $party_master->partyTypeId
-            )
-            ->orderBy('partyTypeName')
-            ->get([
-                'partyTypeId',
-                'partyTypeName',
-            ]);
-
-        return Inertia::render(
-            'PartyMasters/Edit',
-            [
-                'partyMaster' => $party_master,
-                'partyTypes' => $partyTypes,
-            ]
-        );
-    }
-
-    /**
      * Update party.
      */
     public function update(
@@ -143,8 +107,7 @@ class PartyMasterController extends Controller
             $request->validated()
         );
 
-        return redirect()
-            ->route('party-masters.index')
+        return back()
             ->with(
                 'success',
                 'Party updated successfully.'
@@ -159,8 +122,7 @@ class PartyMasterController extends Controller
     ): RedirectResponse {
         $party_master->delete();
 
-        return redirect()
-            ->route('party-masters.index')
+        return back()
             ->with(
                 'success',
                 'Party deleted successfully.'
