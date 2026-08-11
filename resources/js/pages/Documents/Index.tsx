@@ -22,7 +22,7 @@ interface DateDetailItem {
     id: number;
     dateTypeName: string | null;
     date_value: string | null;
-    status: 'Active' | 'Inactive';
+    // status: 'Active' | 'Inactive';
 }
 
 interface DocumentItem {
@@ -342,21 +342,15 @@ export default function Index({
                     onSubmit={handleSearch}
                     className="flex flex-col gap-2 sm:flex-row"
                 >
-
                     <input
                         type="text"
                         value={search}
-                        onChange={(e) =>
-                            setSearch(
-                                e.target.value
-                            )
-                        }
-                        placeholder="Search documents..."
-                        className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:max-w-xs"
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search by documents Title, Description, Document Type..."
+                        className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[600px]"
                     />
 
                     <div className="flex gap-2">
-
                         <button
                             type="submit"
                             className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:flex-none"
@@ -364,23 +358,16 @@ export default function Index({
                             Search
                         </button>
 
-                        {(search ||
-                            filters?.search) && (
-
-                                <button
-                                    type="button"
-                                    onClick={
-                                        handleReset
-                                    }
-                                    className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 sm:flex-none"
-                                >
-                                    Reset
-                                </button>
-
-                            )}
-
+                        {(search || filters?.search) && (
+                            <button
+                                type="button"
+                                onClick={handleReset}
+                                className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 sm:flex-none"
+                            >
+                                Reset
+                            </button>
+                        )}
                     </div>
-
                 </form>
 
                 {/* Empty */}
@@ -890,7 +877,7 @@ export default function Index({
                     >
 
                         <div
-                            className="flex h-[90vh] w-full max-w-4xl flex-col rounded-sm bg-white shadow-xl"
+                            className="flex h-[95vh] w-full max-w-6xl flex-col rounded-sm bg-white shadow-xl"
                             onClick={(e) => e.stopPropagation()}
                         >
 
@@ -981,9 +968,9 @@ export default function Index({
                                                     Date
                                                 </th>
 
-                                                <th className="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                                                {/* <th className="py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
                                                     Status
-                                                </th>
+                                                </th> */}
                                             </tr>
                                         </thead>
 
@@ -1006,7 +993,7 @@ export default function Index({
                                                             : '—'}
                                                     </td>
 
-                                                    <td className="py-2">
+                                                    {/* <td className="py-2">
                                                         <span
                                                             className={
                                                                 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
@@ -1017,7 +1004,7 @@ export default function Index({
                                                         >
                                                             {detail.status}
                                                         </span>
-                                                    </td>
+                                                    </td> */}
                                                 </tr>
                                             ))}
                                         </tbody>

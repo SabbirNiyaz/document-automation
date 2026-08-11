@@ -8,10 +8,17 @@ use App\Http\Controllers\PartyMasterController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DateDetailController;
 
-Route::inertia('/', 'welcome')->name('home');
+// Route::inertia('/', 'welcome')->name('home');
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('documents.index');
+    } else {
+        return redirect()->route('login');
+    }
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    // Route::inertia('dashboard', 'dashboard')->name('dashboard');
 
     // Party Types Routes
     Route::resource('party-types', PartyTypeController::class)

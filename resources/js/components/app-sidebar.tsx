@@ -1,6 +1,5 @@
 import { Link } from '@inertiajs/react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -12,7 +11,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+// import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import PartyTypeController from '@/actions/App/Http/Controllers/PartyTypeController';
 import DateTypeController from '@/actions/App/Http/Controllers/DateTypeController';
@@ -56,7 +55,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={DocumentController.index().url} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

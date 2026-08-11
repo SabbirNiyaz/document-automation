@@ -638,7 +638,7 @@ export default function Index({
 
                         <dl className="mt-4 grid grid-cols-1 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2 sm:gap-x-4">
 
-                            <div>
+                            {/* <div>
                                 <dt className="text-xs uppercase tracking-wide text-gray-400">
                                     Date Type
                                 </dt>
@@ -690,7 +690,7 @@ export default function Index({
                                         infoDateDetail.status
                                     }
                                 </dd>
-                            </div>
+                            </div> */}
 
                             <div>
                                 <dt className="text-xs uppercase tracking-wide text-gray-400">
