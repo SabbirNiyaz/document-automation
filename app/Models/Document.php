@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Document extends Model
 {
@@ -29,6 +29,8 @@ class Document extends Model
         'soft_copy',
         'status',
         'attachment',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
@@ -77,7 +79,8 @@ class Document extends Model
     {
         return $this->belongsTo(
             User::class,
-            'created_by'
+            'created_by',
+            'id'
         );
     }
 
@@ -88,21 +91,14 @@ class Document extends Model
     {
         return $this->belongsTo(
             User::class,
-            'updated_by'
+            'updated_by',
+            'id'
         );
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (Document $document) {
-            $document->created_by = auth()->id();
-        });
-
-        static::updating(function (Document $document) {
-            $document->updated_by = auth()->id();
-        });
-    }
-    // Relationships (One-to-Many)
+    /**
+     * Date details associated with this document.
+     */
     public function dateDetails(): HasMany
     {
         return $this->hasMany(
@@ -110,5 +106,23 @@ class Document extends Model
             'docId',
             'docId'
         );
+    }
+
+    /**
+     * Automatically set created_by and updated_by.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Document $document) {
+            if (auth()->check()) {
+                $document->created_by = auth()->id();
+            }
+        });
+
+        static::updating(function (Document $document) {
+            if (auth()->check()) {
+                $document->updated_by = auth()->id();
+            }
+        });
     }
 }

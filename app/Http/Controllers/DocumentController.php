@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DocumentRequest;
+use App\Models\DateType;
 use App\Models\Document;
 use App\Models\DocumentType;
 use App\Models\PartyMaster;
@@ -11,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\DateType;
 
 class DocumentController extends Controller
 {
@@ -56,14 +56,22 @@ class DocumentController extends Controller
                     'docId' => $document->docId,
                     'title' => $document->title,
                     'description' => $document->description,
+
                     'partyName' => $document->party,
+
                     'docType' => $document->documentType,
+
                     'date' => $document->date?->format('Y-m-d'),
+
                     'soft_copy' => $document->soft_copy,
+
                     'status' => $document->status,
+
                     'attachment' => $document->attachment,
+
                     'created_at' => $document->created_at,
                     'created_by' => $document->createdBy,
+
                     'updated_at' => $document->updated_at,
                     'updated_by' => $document->updatedBy,
 
@@ -83,7 +91,10 @@ class DocumentController extends Controller
         $dateTypes = DateType::query()
             ->where('status', 'Active')
             ->orderBy('dateTypeName')
-            ->get(['dateTypeId', 'dateTypeName']);
+            ->get([
+                'dateTypeId',
+                'dateTypeName',
+            ]);
 
         $parties = PartyMaster::query()
             ->orderBy('partyName')
@@ -120,17 +131,15 @@ class DocumentController extends Controller
     public function store(
         DocumentRequest $request
     ): RedirectResponse {
-
         $data = $request->validated();
 
+        /*
+         * Upload PDF attachment.
+         */
         if ($request->hasFile('attachment')) {
-
-            $data['attachment'] =
-                $request->file('attachment')
-                    ->store(
-                        'documents',
-                        'public'
-                    );
+            $data['attachment'] = $request
+                ->file('attachment')
+                ->store('documents', 'public');
         }
 
         Document::create($data);
@@ -150,31 +159,57 @@ class DocumentController extends Controller
         DocumentRequest $request,
         Document $document
     ): RedirectResponse {
-
         $data = $request->validated();
 
-        if ($request->hasFile('attachment')) {
+        /*
+         * Keep the old attachment path.
+         */
+        $oldAttachment = $document->attachment;
 
-            if (
-                $document->attachment &&
-                Storage::disk('public')->exists(
-                    $document->attachment
-                )
-            ) {
-                Storage::disk('public')->delete(
-                    $document->attachment
-                );
+        /*
+         * Upload new PDF if one was selected.
+         */
+        if ($request->hasFile('attachment')) {
+            $newPath = $request
+                ->file('attachment')
+                ->store('documents', 'public');
+
+            /*
+             * Make sure upload succeeded.
+             */
+            if (!$newPath) {
+                return redirect()
+                    ->route('documents.index')
+                    ->with(
+                        'error',
+                        'PDF attachment could not be uploaded.'
+                    );
             }
 
-            $data['attachment'] =
-                $request->file('attachment')
-                    ->store(
-                        'documents',
-                        'public'
-                    );
+            /*
+             * Replace the attachment path in the database data.
+             */
+            $data['attachment'] = $newPath;
         }
 
-        $document->update($data);
+        /*
+         * Update the document.
+         */
+        $document->fill($data);
+        $document->save();
+
+        /*
+         * Delete the previous PDF only after
+         * the database update succeeded.
+         */
+        if (
+            $oldAttachment &&
+            isset($data['attachment']) &&
+            $oldAttachment !== $data['attachment'] &&
+            Storage::disk('public')->exists($oldAttachment)
+        ) {
+            Storage::disk('public')->delete($oldAttachment);
+        }
 
         return redirect()
             ->route('documents.index')
@@ -190,7 +225,6 @@ class DocumentController extends Controller
     public function destroy(
         Document $document
     ): RedirectResponse {
-
         $document->delete();
 
         return redirect()
@@ -204,22 +238,56 @@ class DocumentController extends Controller
     /**
      * View PDF attachment.
      */
-    public function viewAttachment(
-        Document $document
-    ) {
+    public function viewAttachment(Document $document)
+    {
+        /*
+         * Make sure the document has an attachment.
+         */
+        if (!$document->attachment) {
+            abort(404, 'Attachment not found.');
+        }
+
+        /*
+         * Check that the actual file exists.
+         */
         if (
-            !$document->attachment ||
             !Storage::disk('public')->exists(
                 $document->attachment
             )
         ) {
-            abort(404, 'Attachment not found.');
+            abort(404, 'Attachment file not found.');
         }
 
+        /*
+         * Get the actual physical file path.
+         */
+        $path = Storage::disk('public')->path(
+            $document->attachment
+        );
+
+        /*
+         * Return the current PDF.
+         *
+         * The cache headers are intentionally aggressive
+         * so the browser does not reuse an old PDF.
+         */
         return response()->file(
-            Storage::disk('public')->path(
-                $document->attachment
-            )
+            $path,
+            [
+                'Content-Type' => 'application/pdf',
+
+                'Content-Disposition' =>
+                    'inline; filename="' .
+                    basename($path) .
+                    '"',
+
+                'Cache-Control' =>
+                    'no-store, no-cache, must-revalidate, max-age=0, private',
+
+                'Pragma' => 'no-cache',
+
+                'Expires' => '0',
+            ]
         );
     }
 }
