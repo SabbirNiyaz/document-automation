@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import PartyMasterController from '@/actions/App/Http/Controllers/PartyMasterController';
 import { Info as InfoIcon, Pencil, Trash2, X } from 'lucide-react';
+import PartyTypeCombobox from '@/components/PartyTypeCombobox';
 
 interface User {
     id: number;
@@ -826,32 +827,13 @@ export default function Index({ partyMasters, partyTypes, filters }: Props) {
                                     Party Type
                                 </label>
 
-                                <select
+                                <PartyTypeCombobox
                                     id="create-partyTypeId"
+                                    partyTypes={partyTypes}
                                     value={createData.partyTypeId}
-                                    onChange={(e) =>
-                                        setCreateData('partyTypeId', e.target.value)
-                                    }
-                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
-                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option value="">Select Party Type</option>
-
-                                    {partyTypes.map((partyType) => (
-                                        <option
-                                            key={partyType.partyTypeId}
-                                            value={partyType.partyTypeId}
-                                        >
-                                            {partyType.partyTypeName}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                {createErrors.partyTypeId && (
-                                    <p className="mt-1 text-sm text-red-600">
-                                        {createErrors.partyTypeId}
-                                    </p>
-                                )}
+                                    onChange={(value) => setCreateData('partyTypeId', value)}
+                                    error={createErrors.partyTypeId}
+                                />
                             </div>
 
                             {/* Contact Person */}
@@ -1064,32 +1046,13 @@ export default function Index({ partyMasters, partyTypes, filters }: Props) {
                                     Party Type
                                 </label>
 
-                                <select
+                                <PartyTypeCombobox
                                     id="edit-partyTypeId"
+                                    partyTypes={partyTypes}
                                     value={editData.partyTypeId}
-                                    onChange={(e) =>
-                                        setEditData('partyTypeId', e.target.value)
-                                    }
-                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
-                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option value="">Select Party Type</option>
-
-                                    {partyTypes.map((partyType) => (
-                                        <option
-                                            key={partyType.partyTypeId}
-                                            value={partyType.partyTypeId}
-                                        >
-                                            {partyType.partyTypeName}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                {editErrors.partyTypeId && (
-                                    <p className="mt-1 text-sm text-red-600">
-                                        {editErrors.partyTypeId}
-                                    </p>
-                                )}
+                                    onChange={(value) => setEditData('partyTypeId', value)}
+                                    error={editErrors.partyTypeId}
+                                />
                             </div>
 
                             {/* Contact Person */}
