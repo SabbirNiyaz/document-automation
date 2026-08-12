@@ -11,6 +11,7 @@ import {
     X,
     Plus,
 } from 'lucide-react';
+import DocumentTypeCombobox from '@/components/DocumentTypeCombobox';
 
 interface User {
     id: number;
@@ -1048,18 +1049,18 @@ export default function Index({
 
                         {(search ||
                             filters?.search) && (
-                            <button
-                                type="button"
-                                onClick={
-                                    handleResetSearch
-                                }
-                                className="shrink-0 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
-                                title="Clear search"
-                                aria-label="Clear search"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
+                                <button
+                                    type="button"
+                                    onClick={
+                                        handleResetSearch
+                                    }
+                                    className="shrink-0 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                    title="Clear search"
+                                    aria-label="Clear search"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
                     </form>
 
                     <div className="flex items-center gap-2">
@@ -1153,7 +1154,7 @@ export default function Index({
                                                 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
                                                 (
                                                     document.status ===
-                                                    'Active'
+                                                        'Active'
                                                         ? 'bg-green-100 text-green-800'
                                                         : 'bg-gray-300 text-gray-600'
                                                 )
@@ -1442,7 +1443,7 @@ export default function Index({
                                                         'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
                                                         (
                                                             document.status ===
-                                                            'Active'
+                                                                'Active'
                                                                 ? 'bg-green-100 text-green-800'
                                                                 : 'bg-gray-300 text-gray-600'
                                                         )
@@ -2496,55 +2497,16 @@ export default function Index({
 
                                 {/* Document Type */}
                                 <div>
-
                                     <label className="block text-sm font-medium text-gray-700">
                                         Document Type
                                     </label>
 
-                                    <select
-                                        value={
-                                            createData.docType
-                                        }
-                                        onChange={(e) =>
-                                            setCreateData(
-                                                'docType',
-                                                e.target.value
-                                            )
-                                        }
-                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                    >
-
-                                        <option value="">
-                                            Select Document Type
-                                        </option>
-
-                                        {documentTypes.map(
-                                            (type) => (
-                                                <option
-                                                    key={
-                                                        type.document_id
-                                                    }
-                                                    value={
-                                                        type.document_id
-                                                    }
-                                                >
-                                                    {
-                                                        type.document_name
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-
-                                    </select>
-
-                                    {createErrors.docType && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {
-                                                createErrors.docType
-                                            }
-                                        </p>
-                                    )}
-
+                                    <DocumentTypeCombobox
+                                        documentTypes={documentTypes}
+                                        value={createData.docType}
+                                        onChange={(value) => setCreateData('docType', value)}
+                                        error={createErrors.docType}
+                                    />
                                 </div>
 
                                 {/* Date */}
@@ -2651,8 +2613,8 @@ export default function Index({
                                             setCreateData(
                                                 'status',
                                                 e.target.value as
-                                                    | 'Active'
-                                                    | 'Inactive'
+                                                | 'Active'
+                                                | 'Inactive'
                                             )
                                         }
                                         className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
@@ -2877,55 +2839,16 @@ export default function Index({
 
                                 {/* Document Type */}
                                 <div>
-
                                     <label className="block text-sm font-medium text-gray-700">
                                         Document Type
                                     </label>
 
-                                    <select
-                                        value={
-                                            editData.docType
-                                        }
-                                        onChange={(e) =>
-                                            setEditData(
-                                                'docType',
-                                                e.target.value
-                                            )
-                                        }
-                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                    >
-
-                                        <option value="">
-                                            Select Document Type
-                                        </option>
-
-                                        {documentTypes.map(
-                                            (type) => (
-                                                <option
-                                                    key={
-                                                        type.document_id
-                                                    }
-                                                    value={
-                                                        type.document_id
-                                                    }
-                                                >
-                                                    {
-                                                        type.document_name
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-
-                                    </select>
-
-                                    {editErrors.docType && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {
-                                                editErrors.docType
-                                            }
-                                        </p>
-                                    )}
-
+                                    <DocumentTypeCombobox
+                                        documentTypes={documentTypes}
+                                        value={createData.docType}
+                                        onChange={(value) => setCreateData('docType', value)}
+                                        error={createErrors.docType}
+                                    />
                                 </div>
 
                                 {/* Date */}
@@ -3076,8 +2999,8 @@ export default function Index({
                                             setEditData(
                                                 'status',
                                                 e.target.value as
-                                                    | 'Active'
-                                                    | 'Inactive'
+                                                | 'Active'
+                                                | 'Inactive'
                                             )
                                         }
                                         className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
