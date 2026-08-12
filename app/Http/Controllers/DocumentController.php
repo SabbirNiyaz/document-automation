@@ -21,6 +21,7 @@ class DocumentController extends Controller
     public function index(Request $request): Response
     {
         $search = $request->string('search')->toString();
+        $status = $request->string('status')->toString();
 
         $documents = Document::with([
             'party:partyId,partyName',
@@ -41,6 +42,10 @@ class DocumentController extends Controller
                     });
                 }
             )
+            ->when(
+                $status,
+                fn ($q) => $q->where('status', $status)
+            )
             ->orderByDesc('docId')
             ->paginate(10)
             ->withQueryString();
@@ -51,13 +56,8 @@ class DocumentController extends Controller
                     'docId' => $document->docId,
                     'title' => $document->title,
                     'description' => $document->description,
-
-                    'partyId' => $document->partyName,
-                    'documentTypeId' => $document->docType,
-
                     'partyName' => $document->party,
                     'docType' => $document->documentType,
-
                     'date' => $document->date?->format('Y-m-d'),
                     'soft_copy' => $document->soft_copy,
                     'status' => $document->status,
@@ -102,7 +102,12 @@ class DocumentController extends Controller
 
         return Inertia::render('Documents/Index', [
             'documents' => $documents,
-            'filters' => ['search' => $search],
+
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+            ],
+
             'dateTypes' => $dateTypes,
             'parties' => $parties,
             'documentTypes' => $documentTypes,

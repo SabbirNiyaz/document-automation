@@ -33,8 +33,6 @@ interface DocumentItem {
     description: string | null;
     partyName: Party | null;
     docType: DocumentType | null;
-    partyId: number;
-    documentTypeId: number;
     date: string;
     soft_copy: string | null;
     status: 'Active' | 'Inactive';
@@ -67,6 +65,7 @@ interface Props {
 
     filters: {
         search: string;
+        status: string; // '' | 'Active' | 'Inactive'
     };
 
     dateTypes: DateTypeOption[];
@@ -85,6 +84,10 @@ export default function Index({
         filters?.search ?? ''
     );
 
+    const [status, setStatus] = useState(
+        filters?.status || 'all'
+    );
+
     const { flash } = usePage().props as {
         flash?: {
             success?: string;
@@ -94,7 +97,7 @@ export default function Index({
     const [showSuccess, setShowSuccess] =
         useState(false);
 
-    // PDF modal state (shared by row "View PDF" and Edit modal "View Current PDF")
+    // PDF modal state (used for row "View PDF" AND Edit modal's "View Current PDF")
     const [pdfModal, setPdfModal] = useState<{
         open: boolean;
         docId: number | null;
@@ -169,14 +172,11 @@ export default function Index({
     function submitCreate(e: FormEvent) {
         e.preventDefault();
 
-        postCreate(
-            DocumentController.store().url,
-            {
-                forceFormData: true,
-                preserveScroll: true,
-                onSuccess: () => closeCreate(),
-            }
-        );
+        postCreate(DocumentController.store().url, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => closeCreate(),
+        });
     }
 
     // Edit modal state
@@ -190,7 +190,7 @@ export default function Index({
         errors: editErrors,
         reset: resetEdit,
         clearErrors: clearEditErrors,
-        transform,
+        transform: transformEdit,
     } = useForm({
         title: '',
         description: '',
@@ -209,8 +209,8 @@ export default function Index({
         setEditData({
             title: document.title,
             description: document.description ?? '',
-            partyName: String(document.partyId),
-            docType: String(document.documentTypeId),
+            partyName: document.partyName ? String(document.partyName.partyId) : '',
+            docType: document.docType ? String(document.docType.document_id) : '',
             date: document.date,
             soft_copy: document.soft_copy ?? '',
             status: document.status,
@@ -237,7 +237,7 @@ export default function Index({
         // Strip attachment key entirely when no new file was chosen,
         // so the backend never receives a null/empty value that could
         // overwrite the existing PDF path.
-        transform((formData) => {
+        transformEdit((formData) => {
             if (!formData.attachment) {
                 const { attachment, ...rest } = formData;
                 return rest;
@@ -245,14 +245,11 @@ export default function Index({
             return formData;
         });
 
-        postEdit(
-            DocumentController.update(editDocument.docId).url,
-            {
-                forceFormData: true,
-                preserveScroll: true,
-                onSuccess: () => closeEdit(),
-            }
-        );
+        postEdit(DocumentController.update(editDocument.docId).url, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => closeEdit(),
+        });
     }
 
     // Delete modal state
@@ -274,14 +271,11 @@ export default function Index({
 
         setDeleteProcessing(true);
 
-        router.delete(
-            DocumentController.destroy(deleteDocument.docId).url,
-            {
-                preserveScroll: true,
-                onSuccess: () => closeDelete(),
-                onFinish: () => setDeleteProcessing(false),
-            }
-        );
+        router.delete(DocumentController.destroy(deleteDocument.docId).url, {
+            preserveScroll: true,
+            onSuccess: () => closeDelete(),
+            onFinish: () => setDeleteProcessing(false),
+        });
     }
 
     // Date modal state
@@ -435,17 +429,46 @@ export default function Index({
         });
     }
 
+    // Delete Date Detail modal state
+    const [deleteDateDetail, setDeleteDateDetail] = useState<DateDetailItem | null>(null);
+    const [deleteDateProcessing, setDeleteDateProcessing] = useState(false);
+
+    function openDeleteDate(detail: DateDetailItem) {
+        setDeleteDateDetail(detail);
+    }
+
+    function closeDeleteDate() {
+        setDeleteDateDetail(null);
+    }
+
+    function confirmDeleteDate() {
+        if (!deleteDateDetail) {
+            return;
+        }
+
+        setDeleteDateProcessing(true);
+
+        router.delete(DateDetailController.destroy(deleteDateDetail.id).url, {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeDeleteDate();
+                closeDateModal();
+            },
+            onFinish: () => setDeleteDateProcessing(false),
+        });
+    }
+
     // Close PDF modal on Escape key
     useEffect(() => {
+        if (!pdfModal.open) return;
+
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === 'Escape') {
                 closePdfModal();
             }
         }
 
-        if (pdfModal.open) {
-            document.addEventListener('keydown', handleKeyDown);
-        }
+        document.addEventListener('keydown', handleKeyDown);
 
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
@@ -534,6 +557,22 @@ export default function Index({
             document.removeEventListener('keydown', handleKeyDown);
     }, [editDateModal.open]);
 
+    // Close delete date modal on Escape key
+    useEffect(() => {
+        if (!deleteDateDetail) return;
+
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                closeDeleteDate();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () =>
+            document.removeEventListener('keydown', handleKeyDown);
+    }, [deleteDateDetail]);
+
     useEffect(() => {
         if (flash?.success) {
             setShowSuccess(true);
@@ -557,6 +596,7 @@ export default function Index({
             DocumentController.index().url,
             {
                 search,
+                status: status !== 'all' ? status : undefined,
             },
             {
                 preserveState: true,
@@ -570,7 +610,40 @@ export default function Index({
 
         router.get(
             DocumentController.index().url,
-            {},
+            {
+                status: status !== 'all' ? status : undefined,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    }
+
+    function handleStatusChange(value: string) {
+        setStatus(value);
+
+        router.get(
+            DocumentController.index().url,
+            {
+                search,
+                status: value !== 'all' ? value : undefined,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
+    }
+
+    function handleResetStatus() {
+        setStatus('all');
+
+        router.get(
+            DocumentController.index().url,
+            {
+                search,
+            },
             {
                 preserveState: true,
                 replace: true,
@@ -659,24 +732,25 @@ export default function Index({
 
                     )}
 
-                {/* Search */}
+                {/* Search + Status filters */}
 
-                <form
-                    onSubmit={handleSearch}
-                    className="flex flex-col gap-2 sm:flex-row"
-                >
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by Title, Description or Document Type..."
-                        className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[600px]"
-                    />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
-                    <div className="flex gap-2">
+                    <form
+                        onSubmit={handleSearch}
+                        className="flex items-center gap-2"
+                    >
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search by Title, Description or Document Type..."
+                            className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[420px]"
+                        />
+
                         <button
                             type="submit"
-                            className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:flex-none"
+                            className="shrink-0 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer"
                         >
                             Search
                         </button>
@@ -686,15 +760,47 @@ export default function Index({
                                 type="button"
                                 onClick={handleResetSearch}
                                 className="shrink-0 inline-flex items-center justify-center rounded-sm border border-gray-300 
-                                                            bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
                                 title="Clear search"
                                 aria-label="Clear search"
                             >
                                 <X className="h-4 w-4" />
                             </button>
                         )}
+                    </form>
+
+                    {/* Status filter group */}
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="status-filter" className="text-sm text-gray-500 shrink-0">
+                            Status:
+                        </label>
+
+                        <select
+                            id="status-filter"
+                            value={status}
+                            onChange={(e) => handleStatusChange(e.target.value)}
+                            className="rounded-sm border-gray-300 text-sm shadow-sm px-3 py-2 
+                            focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
+                        >
+                            <option value="all">All</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+
+                        {status !== 'all' && (
+                            <button
+                                type="button"
+                                onClick={handleResetStatus}
+                                className="shrink-0 inline-flex items-center justify-center rounded-sm border border-gray-300 
+                                bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                title="Clear status filter"
+                                aria-label="Clear status filter"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
                     </div>
-                </form>
+                </div>
 
                 {/* Empty */}
 
@@ -895,9 +1001,7 @@ export default function Index({
                                         <button
                                             type="button"
                                             onClick={() =>
-                                                openDelete(
-                                                    document
-                                                )
+                                                openDelete(document)
                                             }
                                             title="Delete"
                                             aria-label="Delete"
@@ -1120,9 +1224,7 @@ export default function Index({
                                                 <button
                                                     type="button"
                                                     onClick={() =>
-                                                        openDelete(
-                                                            document
-                                                        )
+                                                        openDelete(document)
                                                     }
                                                     title="Delete"
                                                     aria-label="Delete"
@@ -1187,7 +1289,7 @@ export default function Index({
 
                 )}
 
-                {/* PDF Modal */}
+                {/* PDF Modal (shared by row action + Edit modal's "View Current PDF") */}
 
                 {pdfModal.open && pdfModal.docId && (
 
@@ -1313,7 +1415,7 @@ export default function Index({
                                                             : '—'}
                                                     </td>
 
-                                                    <td className="py-2 text-right">
+                                                    <td className="py-2 text-right whitespace-nowrap">
                                                         <button
                                                             type="button"
                                                             onClick={() => openEditDateModal(detail)}
@@ -1322,6 +1424,16 @@ export default function Index({
                                                             className="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-yellow-600 hover:bg-yellow-50"
                                                         >
                                                             <Pencil className="h-4 w-4" />
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openDeleteDate(detail)}
+                                                            title="Delete Date"
+                                                            aria-label="Delete Date"
+                                                            className="ml-1 inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-red-600 hover:bg-red-50"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -1546,6 +1658,72 @@ export default function Index({
                     </div>
                 )}
 
+                {/* Delete Date Detail Modal */}
+
+                {deleteDateDetail && (
+                    <div
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeDeleteDate}
+                    >
+                        <div
+                            className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Delete Date
+                                    </h2>
+
+                                    <p className="mt-0.5 text-sm text-gray-500">
+                                        This action cannot be undone.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeDeleteDate}
+                                    className="cursor-pointer rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <p className="mt-4 text-sm text-gray-700">
+                                Are you sure you want to delete{' '}
+                                <span className="font-medium text-gray-900">
+                                    "{deleteDateDetail.dateTypeName ?? 'this date'}"
+                                </span>
+                                ?
+                            </p>
+
+                            <div className="mt-5 flex items-center justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={closeDeleteDate}
+                                    disabled={deleteDateProcessing}
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 
+                                    disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={confirmDeleteDate}
+                                    disabled={deleteDateProcessing}
+                                    className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white 
+                                    shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500
+                                    focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    {deleteDateProcessing ? 'Deleting...' : 'Delete'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Info Modal */}
 
                 {infoDocument && (
@@ -1674,7 +1852,9 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closeCreate}
-                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                    hover:text-gray-600 focus:outline-none focus:ring-2 
+                                    focus:ring-indigo-500 cursor-pointer"
                                     aria-label="Close"
                                 >
                                     <X className="h-5 w-5" />
@@ -1748,10 +1928,7 @@ export default function Index({
                                         <option value="">Select Party</option>
 
                                         {parties.map((party) => (
-                                            <option
-                                                key={party.partyId}
-                                                value={party.partyId}
-                                            >
+                                            <option key={party.partyId} value={party.partyId}>
                                                 {party.partyName}
                                             </option>
                                         ))}
@@ -1780,10 +1957,7 @@ export default function Index({
                                         <option value="">Select Document Type</option>
 
                                         {documentTypes.map((type) => (
-                                            <option
-                                                key={type.document_id}
-                                                value={type.document_id}
-                                            >
+                                            <option key={type.document_id} value={type.document_id}>
                                                 {type.document_name}
                                             </option>
                                         ))}
@@ -1845,10 +2019,7 @@ export default function Index({
                                         type="file"
                                         accept="application/pdf,.pdf"
                                         onChange={(e) =>
-                                            setCreateData(
-                                                'attachment',
-                                                e.target.files?.[0] ?? null
-                                            )
+                                            setCreateData('attachment', e.target.files?.[0] ?? null)
                                         }
                                         className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm"
                                     />
@@ -1878,11 +2049,17 @@ export default function Index({
                                                 e.target.value as 'Active' | 'Inactive'
                                             )
                                         }
-                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 cursor-pointer"
                                     >
                                         <option value="Active">Active</option>
                                         <option value="Inactive">Inactive</option>
                                     </select>
+
+                                    {createErrors.status && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {createErrors.status}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Buttons */}
@@ -1898,7 +2075,9 @@ export default function Index({
                                     <button
                                         type="submit"
                                         disabled={createProcessing}
-                                        className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                        className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
+                                        shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500
+                                        focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                                     >
                                         {createProcessing ? 'Saving...' : 'Save'}
                                     </button>
@@ -1933,7 +2112,9 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closeEdit}
-                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                    hover:text-gray-600 focus:outline-none focus:ring-2 
+                                    focus:ring-indigo-500 cursor-pointer"
                                     aria-label="Close"
                                 >
                                     <X className="h-5 w-5" />
@@ -2005,10 +2186,7 @@ export default function Index({
                                         <option value="">Select Party</option>
 
                                         {parties.map((party) => (
-                                            <option
-                                                key={party.partyId}
-                                                value={party.partyId}
-                                            >
+                                            <option key={party.partyId} value={party.partyId}>
                                                 {party.partyName}
                                             </option>
                                         ))}
@@ -2037,10 +2215,7 @@ export default function Index({
                                         <option value="">Select Document Type</option>
 
                                         {documentTypes.map((type) => (
-                                            <option
-                                                key={type.document_id}
-                                                value={type.document_id}
-                                            >
+                                            <option key={type.document_id} value={type.document_id}>
                                                 {type.document_name}
                                             </option>
                                         ))}
@@ -2091,7 +2266,7 @@ export default function Index({
                                     />
                                 </div>
 
-                                {/* Existing PDF — opens in the same PDF modal used elsewhere */}
+                                {/* Existing PDF - opens in the shared PDF modal */}
                                 {editDocument.attachment && (
                                     <div className="rounded-sm bg-gray-50 p-3">
                                         <p className="text-sm text-gray-600">
@@ -2101,19 +2276,16 @@ export default function Index({
                                         <button
                                             type="button"
                                             onClick={() =>
-                                                openPdfModal(
-                                                    editDocument.docId,
-                                                    editDocument.title
-                                                )
+                                                openPdfModal(editDocument.docId, editDocument.title)
                                             }
-                                            className="mt-2 inline-flex cursor-pointer rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
+                                            className="mt-2 inline-flex cursor-pointer items-center rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
                                         >
                                             View Current PDF
                                         </button>
                                     </div>
                                 )}
 
-                                {/* New PDF */}
+                                {/* Replace PDF */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">
                                         Replace PDF
@@ -2123,10 +2295,7 @@ export default function Index({
                                         type="file"
                                         accept="application/pdf,.pdf"
                                         onChange={(e) =>
-                                            setEditData(
-                                                'attachment',
-                                                e.target.files?.[0] ?? null
-                                            )
+                                            setEditData('attachment', e.target.files?.[0] ?? null)
                                         }
                                         className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm"
                                     />
@@ -2161,6 +2330,12 @@ export default function Index({
                                         <option value="Active">Active</option>
                                         <option value="Inactive">Inactive</option>
                                     </select>
+
+                                    {editErrors.status && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {editErrors.status}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Buttons */}
@@ -2176,7 +2351,9 @@ export default function Index({
                                     <button
                                         type="submit"
                                         disabled={editProcessing}
-                                        className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                        className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white 
+                                        shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500
+                                        focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                                     >
                                         {editProcessing ? 'Updating...' : 'Update'}
                                     </button>
@@ -2211,7 +2388,9 @@ export default function Index({
                                 <button
                                     type="button"
                                     onClick={closeDelete}
-                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 
+                                    hover:text-gray-600 focus:outline-none focus:ring-2 
+                                    focus:ring-indigo-500 cursor-pointer"
                                     aria-label="Close"
                                 >
                                     <X className="h-5 w-5" />
@@ -2231,7 +2410,8 @@ export default function Index({
                                     type="button"
                                     onClick={closeDelete}
                                     disabled={deleteProcessing}
-                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 
+                                    disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                                 >
                                     Cancel
                                 </button>
@@ -2240,7 +2420,9 @@ export default function Index({
                                     type="button"
                                     onClick={confirmDelete}
                                     disabled={deleteProcessing}
-                                    className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                    className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white 
+                                    shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500
+                                    focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                                 >
                                     {deleteProcessing ? 'Deleting...' : 'Delete'}
                                 </button>
