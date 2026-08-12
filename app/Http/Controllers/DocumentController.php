@@ -51,8 +51,13 @@ class DocumentController extends Controller
                     'docId' => $document->docId,
                     'title' => $document->title,
                     'description' => $document->description,
+
+                    'partyId' => $document->partyName,
+                    'documentTypeId' => $document->docType,
+
                     'partyName' => $document->party,
                     'docType' => $document->documentType,
+
                     'date' => $document->date?->format('Y-m-d'),
                     'soft_copy' => $document->soft_copy,
                     'status' => $document->status,
@@ -80,20 +85,7 @@ class DocumentController extends Controller
             ->orderBy('dateTypeName')
             ->get(['dateTypeId', 'dateTypeName']);
 
-        return Inertia::render('Documents/Index', [
-            'documents' => $documents,
-            'filters' => ['search' => $search],
-            'dateTypes' => $dateTypes,
-        ]);
-    }
-
-    /**
-     * Show create form.
-     */
-    public function create(): Response
-    {
         $parties = PartyMaster::query()
-            // ->where('status', 'Active')
             ->orderBy('partyName')
             ->get([
                 'partyId',
@@ -108,13 +100,13 @@ class DocumentController extends Controller
                 'document_name',
             ]);
 
-        return Inertia::render(
-            'Documents/Create',
-            [
-                'parties' => $parties,
-                'documentTypes' => $documentTypes,
-            ]
-        );
+        return Inertia::render('Documents/Index', [
+            'documents' => $documents,
+            'filters' => ['search' => $search],
+            'dateTypes' => $dateTypes,
+            'parties' => $parties,
+            'documentTypes' => $documentTypes,
+        ]);
     }
 
     /**
@@ -144,68 +136,6 @@ class DocumentController extends Controller
                 'success',
                 'Document created successfully.'
             );
-    }
-
-    /**
-     * Show edit form.
-     */
-    public function edit(
-        Document $document
-    ): Response {
-
-        $parties = PartyMaster::query()
-            // ->where('status', 'Active')
-            ->orderBy('partyName')
-            ->get([
-                'partyId',
-                'partyName',
-            ]);
-
-        $documentTypes = DocumentType::query()
-            ->where('status', 'Active')
-            ->orderBy('document_name')
-            ->get([
-                'document_id',
-                'document_name',
-            ]);
-
-        return Inertia::render(
-            'Documents/Edit',
-            [
-                'document' => [
-                    'docId' =>
-                        $document->docId,
-
-                    'title' =>
-                        $document->title,
-
-                    'description' =>
-                        $document->description,
-
-                    'partyName' =>
-                        $document->partyName,
-
-                    'docType' =>
-                        $document->docType,
-
-                    'date' =>
-                        $document->date?->format('Y-m-d'),
-
-                    'soft_copy' =>
-                        $document->soft_copy,
-
-                    'status' =>
-                        $document->status,
-
-                    'attachment' =>
-                        $document->attachment,
-                ],
-
-                'parties' => $parties,
-
-                'documentTypes' => $documentTypes,
-            ]
-        );
     }
 
     /**

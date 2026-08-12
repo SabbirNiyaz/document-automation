@@ -33,6 +33,8 @@ interface DocumentItem {
     description: string | null;
     partyName: Party | null;
     docType: DocumentType | null;
+    partyId: number;
+    documentTypeId: number;
     date: string;
     soft_copy: string | null;
     status: 'Active' | 'Inactive';
@@ -68,12 +70,16 @@ interface Props {
     };
 
     dateTypes: DateTypeOption[];
+    parties: Party[];
+    documentTypes: DocumentType[];
 }
 
 export default function Index({
     documents,
     filters,
     dateTypes,
+    parties,
+    documentTypes,
 }: Props) {
     const [search, setSearch] = useState(
         filters?.search ?? ''
@@ -88,7 +94,7 @@ export default function Index({
     const [showSuccess, setShowSuccess] =
         useState(false);
 
-    // PDF modal state
+    // PDF modal state (shared by row "View PDF" and Edit modal "View Current PDF")
     const [pdfModal, setPdfModal] = useState<{
         open: boolean;
         docId: number | null;
@@ -99,11 +105,11 @@ export default function Index({
         title: '',
     });
 
-    function openPdfModal(document: DocumentItem) {
+    function openPdfModal(docId: number, title: string) {
         setPdfModal({
             open: true,
-            docId: document.docId,
-            title: document.title,
+            docId,
+            title,
         });
     }
 
@@ -124,6 +130,158 @@ export default function Index({
 
     function closeInfo() {
         setInfoDocument(null);
+    }
+
+    // Create modal state
+    const [showCreate, setShowCreate] = useState(false);
+
+    const {
+        data: createData,
+        setData: setCreateData,
+        post: postCreate,
+        processing: createProcessing,
+        errors: createErrors,
+        reset: resetCreate,
+        clearErrors: clearCreateErrors,
+    } = useForm({
+        title: '',
+        description: '',
+        partyName: '',
+        docType: '',
+        date: '',
+        soft_copy: '',
+        status: 'Active' as 'Active' | 'Inactive',
+        attachment: null as File | null,
+    });
+
+    function openCreate() {
+        resetCreate();
+        clearCreateErrors();
+        setShowCreate(true);
+    }
+
+    function closeCreate() {
+        setShowCreate(false);
+        resetCreate();
+        clearCreateErrors();
+    }
+
+    function submitCreate(e: FormEvent) {
+        e.preventDefault();
+
+        postCreate(
+            DocumentController.store().url,
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => closeCreate(),
+            }
+        );
+    }
+
+    // Edit modal state
+    const [editDocument, setEditDocument] = useState<DocumentItem | null>(null);
+
+    const {
+        data: editData,
+        setData: setEditData,
+        post: postEdit,
+        processing: editProcessing,
+        errors: editErrors,
+        reset: resetEdit,
+        clearErrors: clearEditErrors,
+        transform,
+    } = useForm({
+        title: '',
+        description: '',
+        partyName: '',
+        docType: '',
+        date: '',
+        soft_copy: '',
+        status: 'Active' as 'Active' | 'Inactive',
+        attachment: null as File | null,
+        _method: 'PUT',
+    });
+
+    function openEdit(document: DocumentItem) {
+        setEditDocument(document);
+
+        setEditData({
+            title: document.title,
+            description: document.description ?? '',
+            partyName: String(document.partyId),
+            docType: String(document.documentTypeId),
+            date: document.date,
+            soft_copy: document.soft_copy ?? '',
+            status: document.status,
+            attachment: null,
+            _method: 'PUT',
+        });
+
+        clearEditErrors();
+    }
+
+    function closeEdit() {
+        setEditDocument(null);
+        resetEdit();
+        clearEditErrors();
+    }
+
+    function submitEdit(e: FormEvent) {
+        e.preventDefault();
+
+        if (!editDocument) {
+            return;
+        }
+
+        // Strip attachment key entirely when no new file was chosen,
+        // so the backend never receives a null/empty value that could
+        // overwrite the existing PDF path.
+        transform((formData) => {
+            if (!formData.attachment) {
+                const { attachment, ...rest } = formData;
+                return rest;
+            }
+            return formData;
+        });
+
+        postEdit(
+            DocumentController.update(editDocument.docId).url,
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => closeEdit(),
+            }
+        );
+    }
+
+    // Delete modal state
+    const [deleteDocument, setDeleteDocument] = useState<DocumentItem | null>(null);
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
+
+    function openDelete(document: DocumentItem) {
+        setDeleteDocument(document);
+    }
+
+    function closeDelete() {
+        setDeleteDocument(null);
+    }
+
+    function confirmDelete() {
+        if (!deleteDocument) {
+            return;
+        }
+
+        setDeleteProcessing(true);
+
+        router.delete(
+            DocumentController.destroy(deleteDocument.docId).url,
+            {
+                preserveScroll: true,
+                onSuccess: () => closeDelete(),
+                onFinish: () => setDeleteProcessing(false),
+            }
+        );
     }
 
     // Date modal state
@@ -310,6 +468,24 @@ export default function Index({
             document.removeEventListener('keydown', handleKeyDown);
     }, [infoDocument]);
 
+    // Close create/edit/delete modals on Escape key
+    useEffect(() => {
+        if (!showCreate && !editDocument && !deleteDocument) return;
+
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                closeCreate();
+                closeEdit();
+                closeDelete();
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () =>
+            document.removeEventListener('keydown', handleKeyDown);
+    }, [showCreate, editDocument, deleteDocument]);
+
     // Close date modal on Escape key
     useEffect(() => {
         if (!dateModal.open) return;
@@ -389,7 +565,7 @@ export default function Index({
         );
     }
 
-    function handleReset() {
+    function handleResetSearch() {
         setSearch('');
 
         router.get(
@@ -399,24 +575,6 @@ export default function Index({
                 preserveState: true,
                 replace: true,
             }
-        );
-    }
-
-    function handleDelete(
-        document: DocumentItem
-    ) {
-        if (
-            !confirm(
-                `Are you sure you want to delete "${document.title}"?`
-            )
-        ) {
-            return;
-        }
-
-        router.delete(
-            DocumentController.destroy(
-                document.docId
-            ).url
         );
     }
 
@@ -480,14 +638,13 @@ export default function Index({
 
                     </div>
 
-                    <Link
-                        href={
-                            DocumentController.create().url
-                        }
-                        className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 sm:w-auto"
+                    <button
+                        type="button"
+                        onClick={openCreate}
+                        className="inline-flex w-full items-center justify-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 sm:w-auto cursor-pointer"
                     >
                         Add Document
-                    </Link>
+                    </button>
 
                 </div>
 
@@ -527,10 +684,13 @@ export default function Index({
                         {(search || filters?.search) && (
                             <button
                                 type="button"
-                                onClick={handleReset}
-                                className="flex-1 rounded-sm border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 sm:flex-none"
+                                onClick={handleResetSearch}
+                                className="shrink-0 inline-flex items-center justify-center rounded-sm border border-gray-300 
+                                                            bg-white p-2 text-gray-500 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                title="Clear search"
+                                aria-label="Clear search"
                             >
-                                Reset
+                                <X className="h-4 w-4" />
                             </button>
                         )}
                     </div>
@@ -695,7 +855,7 @@ export default function Index({
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    openPdfModal(document)
+                                                    openPdfModal(document.docId, document.title)
                                                 }
                                                 title="View PDF"
                                                 aria-label="View PDF"
@@ -722,23 +882,20 @@ export default function Index({
                                             <Calendar className="h-4 w-4" />
                                         </button>
 
-                                        <Link
-                                            href={
-                                                DocumentController.edit(
-                                                    document.docId
-                                                ).url
-                                            }
+                                        <button
+                                            type="button"
+                                            onClick={() => openEdit(document)}
                                             title="Edit"
                                             aria-label="Edit"
-                                            className="inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600"
+                                            className="inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600 cursor-pointer"
                                         >
                                             <Pencil className="h-4 w-4" />
-                                        </Link>
+                                        </button>
 
                                         <button
                                             type="button"
                                             onClick={() =>
-                                                handleDelete(
+                                                openDelete(
                                                     document
                                                 )
                                             }
@@ -907,7 +1064,7 @@ export default function Index({
                                                     <button
                                                         type="button"
                                                         onClick={() =>
-                                                            openPdfModal(document)
+                                                            openPdfModal(document.docId, document.title)
                                                         }
                                                         title="View PDF"
                                                         aria-label="View PDF"
@@ -950,23 +1107,20 @@ export default function Index({
                                                     <InfoIcon className="h-4 w-4" />
                                                 </button>
 
-                                                <Link
-                                                    href={
-                                                        DocumentController.edit(
-                                                            document.docId
-                                                        ).url
-                                                    }
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEdit(document)}
                                                     title="Edit"
                                                     aria-label="Edit"
-                                                    className="ml-3 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600"
+                                                    className="ml-3 inline-flex items-center justify-center rounded-md bg-yellow-500 p-2 text-white hover:bg-yellow-600 cursor-pointer"
                                                 >
                                                     <Pencil className="h-4 w-4" />
-                                                </Link>
+                                                </button>
 
                                                 <button
                                                     type="button"
                                                     onClick={() =>
-                                                        handleDelete(
+                                                        openDelete(
                                                             document
                                                         )
                                                     }
@@ -1038,7 +1192,7 @@ export default function Index({
                 {pdfModal.open && pdfModal.docId && (
 
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+                        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4"
                         onClick={closePdfModal}
                     >
 
@@ -1493,6 +1647,606 @@ export default function Index({
 
                     </div>
 
+                )}
+
+                {/* Create Modal */}
+
+                {showCreate && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeCreate}
+                    >
+                        <div
+                            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        New Document
+                                    </h2>
+
+                                    <p className="mt-0.5 text-sm text-gray-500">
+                                        Create a new document.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeCreate}
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <form
+                                onSubmit={submitCreate}
+                                className="mt-4 space-y-4"
+                            >
+                                {/* Title */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Title
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        value={createData.title}
+                                        onChange={(e) =>
+                                            setCreateData('title', e.target.value)
+                                        }
+                                        placeholder="Enter document title"
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                        autoFocus
+                                    />
+
+                                    {createErrors.title && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {createErrors.title}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Description */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Description
+                                    </label>
+
+                                    <textarea
+                                        rows={3}
+                                        value={createData.description}
+                                        onChange={(e) =>
+                                            setCreateData('description', e.target.value)
+                                        }
+                                        placeholder="Enter document description"
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+
+                                    {createErrors.description && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {createErrors.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Party */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Party
+                                    </label>
+
+                                    <select
+                                        value={createData.partyName}
+                                        onChange={(e) =>
+                                            setCreateData('partyName', e.target.value)
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select Party</option>
+
+                                        {parties.map((party) => (
+                                            <option
+                                                key={party.partyId}
+                                                value={party.partyId}
+                                            >
+                                                {party.partyName}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {createErrors.partyName && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {createErrors.partyName}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Document Type */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Document Type
+                                    </label>
+
+                                    <select
+                                        value={createData.docType}
+                                        onChange={(e) =>
+                                            setCreateData('docType', e.target.value)
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select Document Type</option>
+
+                                        {documentTypes.map((type) => (
+                                            <option
+                                                key={type.document_id}
+                                                value={type.document_id}
+                                            >
+                                                {type.document_name}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {createErrors.docType && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {createErrors.docType}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Date */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Date
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        value={createData.date}
+                                        onChange={(e) =>
+                                            setCreateData('date', e.target.value)
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+
+                                    {createErrors.date && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {createErrors.date}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Soft Copy */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Soft Copy
+                                    </label>
+
+                                    <textarea
+                                        rows={2}
+                                        value={createData.soft_copy}
+                                        onChange={(e) =>
+                                            setCreateData('soft_copy', e.target.value)
+                                        }
+                                        placeholder="Enter soft copy information"
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+                                </div>
+
+                                {/* Attachment */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        PDF Attachment
+                                    </label>
+
+                                    <input
+                                        type="file"
+                                        accept="application/pdf,.pdf"
+                                        onChange={(e) =>
+                                            setCreateData(
+                                                'attachment',
+                                                e.target.files?.[0] ?? null
+                                            )
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm"
+                                    />
+
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        PDF only. Maximum 10 MB.
+                                    </p>
+
+                                    {createErrors.attachment && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {createErrors.attachment}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Status */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Status
+                                    </label>
+
+                                    <select
+                                        value={createData.status}
+                                        onChange={(e) =>
+                                            setCreateData(
+                                                'status',
+                                                e.target.value as 'Active' | 'Inactive'
+                                            )
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="Active">Active</option>
+                                        <option value="Inactive">Inactive</option>
+                                    </select>
+                                </div>
+
+                                {/* Buttons */}
+                                <div className="flex items-center justify-end gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={closeCreate}
+                                        className="text-sm font-medium text-gray-600 hover:text-gray-800 cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        disabled={createProcessing}
+                                        className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                    >
+                                        {createProcessing ? 'Saving...' : 'Save'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Modal */}
+
+                {editDocument && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeEdit}
+                    >
+                        <div
+                            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Edit Document
+                                    </h2>
+
+                                    <p className="mt-0.5 text-sm text-gray-500">
+                                        Update document information.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeEdit}
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <form
+                                onSubmit={submitEdit}
+                                className="mt-4 space-y-4"
+                            >
+                                {/* Title */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Title
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        value={editData.title}
+                                        onChange={(e) =>
+                                            setEditData('title', e.target.value)
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                        autoFocus
+                                    />
+
+                                    {editErrors.title && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {editErrors.title}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Description */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Description
+                                    </label>
+
+                                    <textarea
+                                        rows={3}
+                                        value={editData.description}
+                                        onChange={(e) =>
+                                            setEditData('description', e.target.value)
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+
+                                    {editErrors.description && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {editErrors.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Party */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Party
+                                    </label>
+
+                                    <select
+                                        value={editData.partyName}
+                                        onChange={(e) =>
+                                            setEditData('partyName', e.target.value)
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select Party</option>
+
+                                        {parties.map((party) => (
+                                            <option
+                                                key={party.partyId}
+                                                value={party.partyId}
+                                            >
+                                                {party.partyName}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {editErrors.partyName && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {editErrors.partyName}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Document Type */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Document Type
+                                    </label>
+
+                                    <select
+                                        value={editData.docType}
+                                        onChange={(e) =>
+                                            setEditData('docType', e.target.value)
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select Document Type</option>
+
+                                        {documentTypes.map((type) => (
+                                            <option
+                                                key={type.document_id}
+                                                value={type.document_id}
+                                            >
+                                                {type.document_name}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {editErrors.docType && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {editErrors.docType}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Date */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Date
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        value={editData.date}
+                                        onChange={(e) =>
+                                            setEditData('date', e.target.value)
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+
+                                    {editErrors.date && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {editErrors.date}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Soft Copy */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Soft Copy
+                                    </label>
+
+                                    <textarea
+                                        rows={2}
+                                        value={editData.soft_copy}
+                                        onChange={(e) =>
+                                            setEditData('soft_copy', e.target.value)
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+                                </div>
+
+                                {/* Existing PDF — opens in the same PDF modal used elsewhere */}
+                                {editDocument.attachment && (
+                                    <div className="rounded-sm bg-gray-50 p-3">
+                                        <p className="text-sm text-gray-600">
+                                            Existing attachment
+                                        </p>
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                openPdfModal(
+                                                    editDocument.docId,
+                                                    editDocument.title
+                                                )
+                                            }
+                                            className="mt-2 inline-flex cursor-pointer rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
+                                        >
+                                            View Current PDF
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* New PDF */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Replace PDF
+                                    </label>
+
+                                    <input
+                                        type="file"
+                                        accept="application/pdf,.pdf"
+                                        onChange={(e) =>
+                                            setEditData(
+                                                'attachment',
+                                                e.target.files?.[0] ?? null
+                                            )
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm"
+                                    />
+
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Leave empty to keep the current PDF.
+                                    </p>
+
+                                    {editErrors.attachment && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {editErrors.attachment}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Status */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Status
+                                    </label>
+
+                                    <select
+                                        value={editData.status}
+                                        onChange={(e) =>
+                                            setEditData(
+                                                'status',
+                                                e.target.value as 'Active' | 'Inactive'
+                                            )
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="Active">Active</option>
+                                        <option value="Inactive">Inactive</option>
+                                    </select>
+                                </div>
+
+                                {/* Buttons */}
+                                <div className="flex items-center justify-end gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={closeEdit}
+                                        className="text-sm font-medium text-gray-600 hover:text-gray-800 cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        disabled={editProcessing}
+                                        className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                    >
+                                        {editProcessing ? 'Updating...' : 'Update'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+
+                {deleteDocument && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeDelete}
+                    >
+                        <div
+                            className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Delete Document
+                                    </h2>
+
+                                    <p className="mt-0.5 text-sm text-gray-500">
+                                        This action cannot be undone.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeDelete}
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <p className="mt-4 text-sm text-gray-700">
+                                Are you sure you want to delete{' '}
+                                <span className="font-medium text-gray-900">
+                                    "{deleteDocument.title}"
+                                </span>
+                                ?
+                            </p>
+
+                            <div className="mt-5 flex items-center justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={closeDelete}
+                                    disabled={deleteProcessing}
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={confirmDelete}
+                                    disabled={deleteProcessing}
+                                    className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    {deleteProcessing ? 'Deleting...' : 'Delete'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
             </div>
