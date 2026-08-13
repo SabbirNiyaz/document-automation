@@ -371,25 +371,25 @@ export default function Index({
     function formatDate(value: string | null) {
         return value
             ? new Date(value).toLocaleString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-              })
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            })
             : '—';
     }
 
     function formatDateValue(value: string | null) {
         return value
             ? new Date(`${value}T00:00:00`).toLocaleDateString(
-                  'en-US',
-                  {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                  }
-              )
+                'en-US',
+                {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                }
+            )
             : '—';
     }
 
@@ -411,10 +411,14 @@ export default function Index({
 
     function notificationTypeBadgeClass(dateDetail: DateDetail) {
         if (dateDetail.notify_email && dateDetail.notify_sms) {
-            return 'bg-indigo-100 text-indigo-800';
+            return 'bg-green-100 text-green-800';
         }
 
-        if (dateDetail.notify_email || dateDetail.notify_sms) {
+        if (dateDetail.notify_email) {
+            return 'bg-red-100 text-red-800';
+        }
+
+        if (dateDetail.notify_sms) {
             return 'bg-blue-100 text-blue-800';
         }
 
