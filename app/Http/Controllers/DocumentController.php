@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DocumentRequest;
+use App\Http\Requests\DateDetailRequest;
 use App\Models\DateType;
 use App\Models\Document;
 use App\Models\DocumentType;
@@ -29,7 +30,9 @@ class DocumentController extends Controller
             'createdBy:id,name',
             'updatedBy:id,name',
             'dateDetails' => function ($query) {
-                $query->with('dateType:dateTypeId,dateTypeName')
+                $query
+                    ->where('status', 'Active')
+                    ->with('dateType:dateTypeId,dateTypeName')
                     ->orderBy('date_value');
             },
         ])
@@ -81,6 +84,10 @@ class DocumentController extends Controller
                             'dateTypeId' => $detail->dateTypeId,
                             'dateTypeName' => $detail->dateType?->dateTypeName,
                             'date_value' => $detail->date_value?->format('Y-m-d'),
+                            'notify_email' => $detail->notify_email,
+                            'notify_sms' => $detail->notify_sms,
+                            'notification_before_days' => $detail->notification_before_days,
+                            'notification_after_days' => $detail->notification_after_days,
                             'status' => $detail->status,
                         ]
                     ),
@@ -122,6 +129,9 @@ class DocumentController extends Controller
             'dateTypes' => $dateTypes,
             'parties' => $parties,
             'documentTypes' => $documentTypes,
+
+            'notificationDayOptions' =>
+                DateDetailRequest::NOTIFICATION_DAY_OPTIONS,
         ]);
     }
 
