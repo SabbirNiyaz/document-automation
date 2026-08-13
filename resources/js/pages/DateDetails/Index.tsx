@@ -42,6 +42,15 @@ interface DateDetail {
 
     date_value: string | null;
 
+    notify_email: boolean;
+    notify_sms: boolean;
+
+    notification_before_days: number | null;
+    notification_after_days: number | null;
+
+    before_sent_at: string | null;
+    after_sent_at: string | null;
+
     status: 'Active' | 'Inactive';
 
     created_at: string | null;
@@ -68,6 +77,8 @@ interface Props {
     dateTypes: DateType[];
     documents: Document[];
 
+    notificationDayOptions: number[];
+
     filters: {
         search: string;
         status: string; // '' | 'Active' | 'Inactive'
@@ -78,6 +89,7 @@ export default function Index({
     dateDetails,
     dateTypes,
     documents,
+    notificationDayOptions,
     filters,
 }: Props) {
     const [search, setSearch] = useState(
@@ -137,6 +149,10 @@ export default function Index({
         dateTypeId: '',
         docId: '',
         date_value: '',
+        notify_email: false as boolean,
+        notify_sms: false as boolean,
+        notification_before_days: '',
+        notification_after_days: '',
         status: 'Active' as 'Active' | 'Inactive',
     });
 
@@ -180,6 +196,10 @@ export default function Index({
         dateTypeId: '',
         docId: '',
         date_value: '',
+        notify_email: false as boolean,
+        notify_sms: false as boolean,
+        notification_before_days: '',
+        notification_after_days: '',
         status: 'Active' as 'Active' | 'Inactive',
     });
 
@@ -190,6 +210,16 @@ export default function Index({
             dateTypeId: String(dateDetail.dateTypeId),
             docId: String(dateDetail.docId),
             date_value: dateDetail.date_value ?? '',
+            notify_email: dateDetail.notify_email,
+            notify_sms: dateDetail.notify_sms,
+            notification_before_days:
+                dateDetail.notification_before_days !== null
+                    ? String(dateDetail.notification_before_days)
+                    : '',
+            notification_after_days:
+                dateDetail.notification_after_days !== null
+                    ? String(dateDetail.notification_after_days)
+                    : '',
             status: dateDetail.status,
         });
 
@@ -363,6 +393,42 @@ export default function Index({
             : '—';
     }
 
+    function notificationTypeLabel(dateDetail: DateDetail) {
+        if (dateDetail.notify_email && dateDetail.notify_sms) {
+            return 'SMS & Email';
+        }
+
+        if (dateDetail.notify_email) {
+            return 'Email';
+        }
+
+        if (dateDetail.notify_sms) {
+            return 'SMS';
+        }
+
+        return 'None';
+    }
+
+    function notificationTypeBadgeClass(dateDetail: DateDetail) {
+        if (dateDetail.notify_email && dateDetail.notify_sms) {
+            return 'bg-indigo-100 text-indigo-800';
+        }
+
+        if (dateDetail.notify_email || dateDetail.notify_sms) {
+            return 'bg-blue-100 text-blue-800';
+        }
+
+        return 'bg-gray-200 text-gray-600';
+    }
+
+    function formatDays(value: number | null) {
+        if (value === null || value === undefined) {
+            return '—';
+        }
+
+        return `${value} ${value === 1 ? 'day' : 'days'}`;
+    }
+
     return (
         <>
             <Head title="Date Details" />
@@ -413,7 +479,7 @@ export default function Index({
                             placeholder="Search by Date Type or Document Title..."
                             className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm 
                             shadow-sm focus:border-indigo-500 focus:ring-indigo-500 
-                            sm:w-[600px]"
+                            sm:w-[400px]"
                         />
 
                         <button
@@ -518,6 +584,26 @@ export default function Index({
                                     </span>
                                 </div>
 
+                                {/* Notification info */}
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                    <span
+                                        className={
+                                            'inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ' +
+                                            notificationTypeBadgeClass(dateDetail)
+                                        }
+                                    >
+                                        {notificationTypeLabel(dateDetail)}
+                                    </span>
+
+                                    <span className="text-xs text-gray-500">
+                                        Before: {formatDays(dateDetail.notification_before_days)}
+                                    </span>
+
+                                    <span className="text-xs text-gray-500">
+                                        After: {formatDays(dateDetail.notification_after_days)}
+                                    </span>
+                                </div>
+
                                 {/* Actions */}
                                 <div className="mt-4 flex gap-3">
 
@@ -582,6 +668,18 @@ export default function Index({
                                     </th>
 
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        Notification
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        Before
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                        After
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                                         Status
                                     </th>
 
@@ -610,6 +708,25 @@ export default function Index({
 
                                         <td className="px-4 py-3 text-sm text-gray-700">
                                             {formatDateValue(dateDetail.date_value)}
+                                        </td>
+
+                                        <td className="px-4 py-3 text-sm">
+                                            <span
+                                                className={
+                                                    'inline-flex rounded-full px-2 py-0.5 text-xs font-medium ' +
+                                                    notificationTypeBadgeClass(dateDetail)
+                                                }
+                                            >
+                                                {notificationTypeLabel(dateDetail)}
+                                            </span>
+                                        </td>
+
+                                        <td className="px-4 py-3 text-sm text-gray-700">
+                                            {formatDays(dateDetail.notification_before_days)}
+                                        </td>
+
+                                        <td className="px-4 py-3 text-sm text-gray-700">
+                                            {formatDays(dateDetail.notification_after_days)}
                                         </td>
 
                                         <td className="px-4 py-3 text-sm">
@@ -725,6 +842,48 @@ export default function Index({
                         </div>
 
                         <dl className="mt-4 grid grid-cols-1 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2 sm:gap-x-4">
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Notification
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {notificationTypeLabel(infoDateDetail)}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Before / After
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {formatDays(infoDateDetail.notification_before_days)}
+                                    {' / '}
+                                    {formatDays(infoDateDetail.notification_after_days)}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    Before Sent At
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {formatDate(infoDateDetail.before_sent_at)}
+                                </dd>
+                            </div>
+
+                            <div>
+                                <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                    After Sent At
+                                </dt>
+
+                                <dd className="mt-0.5 text-gray-700">
+                                    {formatDate(infoDateDetail.after_sent_at)}
+                                </dd>
+                            </div>
 
                             <div>
                                 <dt className="text-xs uppercase tracking-wide text-gray-400">
@@ -923,6 +1082,134 @@ export default function Index({
                                 )}
                             </div>
 
+                            {/* Notification Channels */}
+                            <div>
+                                <span className="block text-sm font-medium text-gray-700">
+                                    Notify Via
+                                </span>
+
+                                <div className="mt-2 flex items-center gap-6">
+                                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={createData.notify_email}
+                                            onChange={(e) =>
+                                                setCreateData(
+                                                    'notify_email',
+                                                    e.target.checked
+                                                )
+                                            }
+                                            className="rounded-sm border-gray-300 text-indigo-600 
+                                            focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                        Email
+                                    </label>
+
+                                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={createData.notify_sms}
+                                            onChange={(e) =>
+                                                setCreateData(
+                                                    'notify_sms',
+                                                    e.target.checked
+                                                )
+                                            }
+                                            className="rounded-sm border-gray-300 text-indigo-600 
+                                            focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                        SMS
+                                    </label>
+                                </div>
+
+                                {createErrors.notify_email && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {createErrors.notify_email}
+                                    </p>
+                                )}
+
+                                {createErrors.notify_sms && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {createErrors.notify_sms}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Notify Before / After */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label
+                                        htmlFor="create-notification_before_days"
+                                        className="block text-sm font-medium text-gray-700"
+                                    >
+                                        Notify Before
+                                    </label>
+
+                                    <select
+                                        id="create-notification_before_days"
+                                        value={createData.notification_before_days}
+                                        onChange={(e) =>
+                                            setCreateData(
+                                                'notification_before_days',
+                                                e.target.value
+                                            )
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
+                                        px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">None</option>
+
+                                        {notificationDayOptions.map((days) => (
+                                            <option key={days} value={days}>
+                                                {days} {days === 1 ? 'day' : 'days'}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {createErrors.notification_before_days && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {createErrors.notification_before_days}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label
+                                        htmlFor="create-notification_after_days"
+                                        className="block text-sm font-medium text-gray-700"
+                                    >
+                                        Notify After
+                                    </label>
+
+                                    <select
+                                        id="create-notification_after_days"
+                                        value={createData.notification_after_days}
+                                        onChange={(e) =>
+                                            setCreateData(
+                                                'notification_after_days',
+                                                e.target.value
+                                            )
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
+                                        px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">None</option>
+
+                                        {notificationDayOptions.map((days) => (
+                                            <option key={days} value={days}>
+                                                {days} {days === 1 ? 'day' : 'days'}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {createErrors.notification_after_days && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {createErrors.notification_after_days}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Status */}
                             <div>
                                 <label
@@ -1116,6 +1403,134 @@ export default function Index({
                                         {editErrors.date_value}
                                     </p>
                                 )}
+                            </div>
+
+                            {/* Notification Channels */}
+                            <div>
+                                <span className="block text-sm font-medium text-gray-700">
+                                    Notify Via
+                                </span>
+
+                                <div className="mt-2 flex items-center gap-6">
+                                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={editData.notify_email}
+                                            onChange={(e) =>
+                                                setEditData(
+                                                    'notify_email',
+                                                    e.target.checked
+                                                )
+                                            }
+                                            className="rounded-sm border-gray-300 text-indigo-600 
+                                            focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                        Email
+                                    </label>
+
+                                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={editData.notify_sms}
+                                            onChange={(e) =>
+                                                setEditData(
+                                                    'notify_sms',
+                                                    e.target.checked
+                                                )
+                                            }
+                                            className="rounded-sm border-gray-300 text-indigo-600 
+                                            focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                        SMS
+                                    </label>
+                                </div>
+
+                                {editErrors.notify_email && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {editErrors.notify_email}
+                                    </p>
+                                )}
+
+                                {editErrors.notify_sms && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {editErrors.notify_sms}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Notify Before / After */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label
+                                        htmlFor="edit-notification_before_days"
+                                        className="block text-sm font-medium text-gray-700"
+                                    >
+                                        Notify Before
+                                    </label>
+
+                                    <select
+                                        id="edit-notification_before_days"
+                                        value={editData.notification_before_days}
+                                        onChange={(e) =>
+                                            setEditData(
+                                                'notification_before_days',
+                                                e.target.value
+                                            )
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
+                                        px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">None</option>
+
+                                        {notificationDayOptions.map((days) => (
+                                            <option key={days} value={days}>
+                                                {days} {days === 1 ? 'day' : 'days'}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {editErrors.notification_before_days && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {editErrors.notification_before_days}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label
+                                        htmlFor="edit-notification_after_days"
+                                        className="block text-sm font-medium text-gray-700"
+                                    >
+                                        Notify After
+                                    </label>
+
+                                    <select
+                                        id="edit-notification_after_days"
+                                        value={editData.notification_after_days}
+                                        onChange={(e) =>
+                                            setEditData(
+                                                'notification_after_days',
+                                                e.target.value
+                                            )
+                                        }
+                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
+                                        px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">None</option>
+
+                                        {notificationDayOptions.map((days) => (
+                                            <option key={days} value={days}>
+                                                {days} {days === 1 ? 'day' : 'days'}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {editErrors.notification_after_days && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {editErrors.notification_after_days}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Status */}
