@@ -18,6 +18,12 @@ class DateDetail extends Model
         'dateTypeId',
         'docId',
         'date_value',
+        'notify_email',
+        'notify_sms',
+        'notification_before_days',
+        'notification_after_days',
+        'before_sent_at',
+        'after_sent_at',
         'status',
         'created_by',
         'updated_by',
@@ -25,6 +31,12 @@ class DateDetail extends Model
 
     protected $casts = [
         'date_value' => 'date:Y-m-d',
+        'notify_email' => 'boolean',
+        'notify_sms' => 'boolean',
+        'notification_before_days' => 'integer',
+        'notification_after_days' => 'integer',
+        'before_sent_at' => 'datetime',
+        'after_sent_at' => 'datetime',
     ];
 
     /**

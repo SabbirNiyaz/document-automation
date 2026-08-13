@@ -12,6 +12,18 @@ class DateDetailRequest extends FormRequest
         return true;
     }
 
+    /**
+     * The allowed values (in days) for the before/after
+     * notification select dropdowns.
+     */
+    public const NOTIFICATION_DAY_OPTIONS = [
+        1,
+        3,
+        7,
+        15,
+        30,
+    ];
+
     public function rules(): array
     {
         return [
@@ -30,6 +42,28 @@ class DateDetailRequest extends FormRequest
             'date_value' => [
                 'required',
                 'date',
+            ],
+
+            'notify_email' => [
+                'sometimes',
+                'boolean',
+            ],
+
+            'notify_sms' => [
+                'sometimes',
+                'boolean',
+            ],
+
+            'notification_before_days' => [
+                'nullable',
+                'integer',
+                Rule::in(self::NOTIFICATION_DAY_OPTIONS),
+            ],
+
+            'notification_after_days' => [
+                'nullable',
+                'integer',
+                Rule::in(self::NOTIFICATION_DAY_OPTIONS),
             ],
 
             'status' => [
@@ -63,6 +97,24 @@ class DateDetailRequest extends FormRequest
 
             'date_value.date' =>
                 'Please enter a valid date.',
+
+            'notify_email.boolean' =>
+                'Notify by email must be true or false.',
+
+            'notify_sms.boolean' =>
+                'Notify by SMS must be true or false.',
+
+            'notification_before_days.integer' =>
+                'Notify before must be a number of days.',
+
+            'notification_before_days.in' =>
+                'Notify before must be one of the allowed day options.',
+
+            'notification_after_days.integer' =>
+                'Notify after must be a number of days.',
+
+            'notification_after_days.in' =>
+                'Notify after must be one of the allowed day options.',
 
             'status.required' =>
                 'Status is required.',

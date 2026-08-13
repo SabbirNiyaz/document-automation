@@ -91,6 +91,24 @@ class DateDetailController extends Controller
                 'date_value' =>
                     $dateDetail->date_value?->format('Y-m-d'),
 
+                'notify_email' =>
+                    $dateDetail->notify_email,
+
+                'notify_sms' =>
+                    $dateDetail->notify_sms,
+
+                'notification_before_days' =>
+                    $dateDetail->notification_before_days,
+
+                'notification_after_days' =>
+                    $dateDetail->notification_after_days,
+
+                'before_sent_at' =>
+                    $dateDetail->before_sent_at?->toDateTimeString(),
+
+                'after_sent_at' =>
+                    $dateDetail->after_sent_at?->toDateTimeString(),
+
                 'status' =>
                     $dateDetail->status,
 
@@ -129,6 +147,9 @@ class DateDetailController extends Controller
 
             'dateTypes' => $dateTypes,
             'documents' => $documents,
+
+            'notificationDayOptions' =>
+                DateDetailRequest::NOTIFICATION_DAY_OPTIONS,
 
             'filters' => [
                 'search' => $search,
