@@ -7,6 +7,7 @@ use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\PartyMasterController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DateDetailController;
+use App\Http\Controllers\AttachmentController;
 
 // Route::inertia('/', 'welcome')->name('home');
 Route::get('/', function () {
@@ -40,14 +41,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->parameters(['party-masters' => 'party_master'])
         ->except(['show']);
     
-    // Document Attachment Route (must come before the resource route)
-    Route::get('documents/{document}/attachment', [DocumentController::class, 'viewAttachment'])
-        ->name('documents.attachment');
+    // // Document Attachment Route (must come before the resource route)
+    // Route::get('documents/{document}/attachment', [DocumentController::class, 'viewAttachment'])
+    //     ->name('documents.attachment');
 
     // Document Routes
     Route::resource('documents', DocumentController::class)
         ->parameters(['documents' => 'document'])
         ->except(['show']);
+    
+    // Attachment Routes
+    Route::post('attachments', [AttachmentController::class, 'store'])
+        ->name('attachments.store');
+
+    Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy'])
+        ->name('attachments.destroy');
+
+    Route::get('attachments/{attachment}/view', [AttachmentController::class, 'view'])
+        ->name('attachments.view');
 
     // Date Details Routes
     Route::resource('date-details', DateDetailController::class)

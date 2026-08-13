@@ -2,12 +2,14 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import DocumentController from '@/actions/App/Http/Controllers/DocumentController';
 import DateDetailController from '@/actions/App/Http/Controllers/DateDetailController';
+import AttachmentController from '@/actions/App/Http/Controllers/AttachmentController';
 import {
     Info as InfoIcon,
     Pencil,
     Trash2,
     FileText,
     Calendar,
+    Paperclip,
     X,
     Plus,
 } from 'lucide-react';
@@ -40,6 +42,14 @@ interface DateDetailItem {
     status: 'Active' | 'Inactive';
 }
 
+interface AttachmentItem {
+    attachmentId: number;
+    file_name: string;
+    file_type: string | null;
+    file_size: number | null;
+    created_at: string | null;
+}
+
 interface DocumentItem {
     docId: number;
     title: string;
@@ -49,12 +59,12 @@ interface DocumentItem {
     date: string;
     soft_copy: string | null;
     status: 'Active' | 'Inactive';
-    attachment: string | null;
     created_at: string | null;
     updated_at: string | null;
     created_by: User | null;
     updated_by: User | null;
     dateDetails: DateDetailItem[];
+    attachments: AttachmentItem[];
 }
 
 interface PaginationLink {
@@ -116,57 +126,32 @@ export default function Index({
 
     /*
     |--------------------------------------------------------------------------
-    | PDF MODAL
+    | PDF VIEWER MODAL (single file preview, reused by attachments list)
     |--------------------------------------------------------------------------
-    |
-    | IMPORTANT:
-    | attachment is stored here so React knows which PDF is currently
-    | being displayed.
-    |
     */
     const [pdfModal, setPdfModal] = useState<{
         open: boolean;
-        docId: number | null;
+        attachmentId: number | null;
         title: string;
-        attachment: string | null;
-        cacheKey: string;
     }>({
         open: false,
-        docId: null,
+        attachmentId: null,
         title: '',
-        attachment: null,
-        cacheKey: '',
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Open PDF
-    |--------------------------------------------------------------------------
-    */
-    function openPdfModal(document: DocumentItem) {
-        const attachment = document.attachment ?? '';
-
+    function openPdfModal(attachment: AttachmentItem) {
         setPdfModal({
             open: true,
-            docId: document.docId,
-            title: document.title,
-            attachment: document.attachment,
-            cacheKey: `${attachment}-${Date.now()}`,
+            attachmentId: attachment.attachmentId,
+            title: attachment.file_name,
         });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Close PDF
-    |--------------------------------------------------------------------------
-    */
     function closePdfModal() {
         setPdfModal({
             open: false,
-            docId: null,
+            attachmentId: null,
             title: '',
-            attachment: null,
-            cacheKey: '',
         });
     }
 
@@ -209,7 +194,6 @@ export default function Index({
         date: '',
         soft_copy: '',
         status: 'Active' as 'Active' | 'Inactive',
-        attachment: null as File | null,
     });
 
     function openCreate() {
@@ -230,7 +214,6 @@ export default function Index({
         postCreate(
             DocumentController.store().url,
             {
-                forceFormData: true,
                 preserveScroll: true,
                 onSuccess: () => closeCreate(),
             }
@@ -248,12 +231,11 @@ export default function Index({
     const {
         data: editData,
         setData: setEditData,
-        post: postEdit,
+        put: putEdit,
         processing: editProcessing,
         errors: editErrors,
         reset: resetEdit,
         clearErrors: clearEditErrors,
-        transform: transformEdit,
     } = useForm({
         title: '',
         description: '',
@@ -262,8 +244,6 @@ export default function Index({
         date: '',
         soft_copy: '',
         status: 'Active' as 'Active' | 'Inactive',
-        attachment: null as File | null,
-        _method: 'PUT',
     });
 
     function openEdit(document: DocumentItem) {
@@ -281,8 +261,6 @@ export default function Index({
             date: document.date,
             soft_copy: document.soft_copy ?? '',
             status: document.status,
-            attachment: null,
-            _method: 'PUT',
         });
 
         clearEditErrors();
@@ -301,40 +279,13 @@ export default function Index({
             return;
         }
 
-        transformEdit((formData) => {
-            /*
-             * Do not send attachment when no new PDF
-             * was selected.
-             */
-            if (!formData.attachment) {
-                const {
-                    attachment,
-                    ...rest
-                } = formData;
-
-                return rest;
-            }
-
-            return formData;
-        });
-
-        postEdit(
+        putEdit(
             DocumentController.update(
                 editDocument.docId
             ).url,
             {
-                forceFormData: true,
                 preserveScroll: true,
-
-                onSuccess: () => {
-                    closeEdit();
-
-                    /*
-                     * Make sure the PDF modal is not left
-                     * open with the old attachment.
-                     */
-                    closePdfModal();
-                },
+                onSuccess: () => closeEdit(),
             }
         );
     }
@@ -387,12 +338,6 @@ export default function Index({
     |--------------------------------------------------------------------------
     | Date Details Modal
     |--------------------------------------------------------------------------
-    |
-    | NOTE:
-    | Only Active date details are ever sent from the backend for a
-    | document's `dateDetails` relation, so nothing further needs to be
-    | filtered out here — Inactive rows simply never arrive.
-    |
     */
     const [dateModal, setDateModal] = useState<{
         open: boolean;
@@ -657,6 +602,155 @@ export default function Index({
 
     /*
     |--------------------------------------------------------------------------
+    | Attachments Modal (list, mirrors Date Details modal)
+    |--------------------------------------------------------------------------
+    */
+    const [attachmentModal, setAttachmentModal] = useState<{
+        open: boolean;
+        docId: number | null;
+        title: string;
+        attachments: AttachmentItem[];
+    }>({
+        open: false,
+        docId: null,
+        title: '',
+        attachments: [],
+    });
+
+    function openAttachmentModal(document: DocumentItem) {
+        setAttachmentModal({
+            open: true,
+            docId: document.docId,
+            title: document.title,
+            attachments: document.attachments ?? [],
+        });
+    }
+
+    function closeAttachmentModal() {
+        setAttachmentModal({
+            open: false,
+            docId: null,
+            title: '',
+            attachments: [],
+        });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Add Attachment Modal
+    |--------------------------------------------------------------------------
+    */
+    const [addAttachmentModal, setAddAttachmentModal] =
+        useState<{
+            open: boolean;
+            docId: number | null;
+        }>({
+            open: false,
+            docId: null,
+        });
+
+    const {
+        data: addAttachmentData,
+        setData: setAddAttachmentData,
+        post: postAddAttachment,
+        processing: addAttachmentProcessing,
+        errors: addAttachmentErrors,
+        reset: resetAddAttachment,
+        clearErrors: clearAddAttachmentErrors,
+    } = useForm({
+        docId: '' as number | string,
+        attachment: null as File | null,
+    });
+
+    function openAddAttachmentModal(docId: number) {
+        resetAddAttachment();
+        clearAddAttachmentErrors();
+
+        setAddAttachmentData({
+            docId,
+            attachment: null,
+        });
+
+        setAddAttachmentModal({
+            open: true,
+            docId,
+        });
+    }
+
+    function closeAddAttachmentModal() {
+        setAddAttachmentModal({
+            open: false,
+            docId: null,
+        });
+
+        resetAddAttachment();
+        clearAddAttachmentErrors();
+    }
+
+    function submitAddAttachment(e: FormEvent) {
+        e.preventDefault();
+
+        postAddAttachment(
+            AttachmentController.store().url,
+            {
+                forceFormData: true,
+                preserveScroll: true,
+
+                onSuccess: () => {
+                    closeAddAttachmentModal();
+                    closeAttachmentModal();
+                },
+            }
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Attachment
+    |--------------------------------------------------------------------------
+    */
+    const [deleteAttachment, setDeleteAttachment] =
+        useState<AttachmentItem | null>(null);
+
+    const [deleteAttachmentProcessing, setDeleteAttachmentProcessing] =
+        useState(false);
+
+    function openDeleteAttachment(attachment: AttachmentItem) {
+        setDeleteAttachment(attachment);
+    }
+
+    function closeDeleteAttachment() {
+        setDeleteAttachment(null);
+    }
+
+    function confirmDeleteAttachment() {
+        if (!deleteAttachment) {
+            return;
+        }
+
+        setDeleteAttachmentProcessing(true);
+
+        router.delete(
+            AttachmentController.destroy(
+                deleteAttachment.attachmentId
+            ).url,
+            {
+                preserveScroll: true,
+
+                onSuccess: () => {
+                    closeDeleteAttachment();
+                    closeAttachmentModal();
+                },
+
+                onFinish: () => {
+                    setDeleteAttachmentProcessing(false);
+                },
+            }
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Escape Key Handlers
     |--------------------------------------------------------------------------
     */
@@ -852,6 +946,84 @@ export default function Index({
         };
     }, [deleteDateDetail]);
 
+    useEffect(() => {
+        if (!attachmentModal.open) {
+            return;
+        }
+
+        function handleKeyDown(
+            e: KeyboardEvent
+        ) {
+            if (e.key === 'Escape') {
+                closeAttachmentModal();
+            }
+        }
+
+        document.addEventListener(
+            'keydown',
+            handleKeyDown
+        );
+
+        return () => {
+            document.removeEventListener(
+                'keydown',
+                handleKeyDown
+            );
+        };
+    }, [attachmentModal.open]);
+
+    useEffect(() => {
+        if (!addAttachmentModal.open) {
+            return;
+        }
+
+        function handleKeyDown(
+            e: KeyboardEvent
+        ) {
+            if (e.key === 'Escape') {
+                closeAddAttachmentModal();
+            }
+        }
+
+        document.addEventListener(
+            'keydown',
+            handleKeyDown
+        );
+
+        return () => {
+            document.removeEventListener(
+                'keydown',
+                handleKeyDown
+            );
+        };
+    }, [addAttachmentModal.open]);
+
+    useEffect(() => {
+        if (!deleteAttachment) {
+            return;
+        }
+
+        function handleKeyDown(
+            e: KeyboardEvent
+        ) {
+            if (e.key === 'Escape') {
+                closeDeleteAttachment();
+            }
+        }
+
+        document.addEventListener(
+            'keydown',
+            handleKeyDown
+        );
+
+        return () => {
+            document.removeEventListener(
+                'keydown',
+                handleKeyDown
+            );
+        };
+    }, [deleteAttachment]);
+
     /*
     |--------------------------------------------------------------------------
     | Flash Messages
@@ -969,7 +1141,7 @@ export default function Index({
 
     /*
     |--------------------------------------------------------------------------
-    | Date Formatting
+    | Formatting
     |--------------------------------------------------------------------------
     */
     function formatDate(
@@ -1008,6 +1180,22 @@ export default function Index({
                 day: 'numeric',
             }
         );
+    }
+
+    function formatFileSize(value: number | null) {
+        if (value === null || value === undefined) {
+            return '—';
+        }
+
+        if (value < 1024) {
+            return `${value} B`;
+        }
+
+        if (value < 1024 * 1024) {
+            return `${(value / 1024).toFixed(1)} KB`;
+        }
+
+        return `${(value / (1024 * 1024)).toFixed(1)} MB`;
     }
 
     function notificationTypeLabel(
@@ -1334,25 +1522,25 @@ export default function Index({
                                             <InfoIcon className="h-4 w-4" />
                                         </button>
 
-                                        {document.attachment ? (
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    openPdfModal(
-                                                        document
-                                                    )
-                                                }
-                                                title="View PDF"
-                                                aria-label="View PDF"
-                                                className="inline-flex items-center justify-center rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600 cursor-pointer"
-                                            >
-                                                <FileText className="h-4 w-4" />
-                                            </button>
-                                        ) : (
-                                            <span className="inline-flex items-center rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-400">
-                                                No PDF
-                                            </span>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                openAttachmentModal(
+                                                    document
+                                                )
+                                            }
+                                            title="Attachments"
+                                            aria-label="Attachments"
+                                            className="relative inline-flex items-center justify-center rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600 cursor-pointer"
+                                        >
+                                            <Paperclip className="h-4 w-4" />
+
+                                            {document.attachments.length > 0 && (
+                                                <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-semibold text-blue-600 ring-1 ring-blue-500">
+                                                    {document.attachments.length}
+                                                </span>
+                                            )}
+                                        </button>
 
                                         <button
                                             type="button"
@@ -1445,7 +1633,7 @@ export default function Index({
                                     </th>
 
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                                        Attachment
+                                        Attachments
                                     </th>
 
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
@@ -1539,25 +1727,25 @@ export default function Index({
 
                                             <td className="px-4 py-3">
 
-                                                {document.attachment ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openPdfModal(
-                                                                document
-                                                            )
-                                                        }
-                                                        title="View PDF"
-                                                        aria-label="View PDF"
-                                                        className="inline-flex items-center justify-center rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600 cursor-pointer"
-                                                    >
-                                                        <FileText className="h-4 w-4" />
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-sm text-gray-400">
-                                                        No PDF
-                                                    </span>
-                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        openAttachmentModal(
+                                                            document
+                                                        )
+                                                    }
+                                                    title="Attachments"
+                                                    aria-label="Attachments"
+                                                    className="relative inline-flex items-center justify-center rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600 cursor-pointer"
+                                                >
+                                                    <Paperclip className="h-4 w-4" />
+
+                                                    {document.attachments.length > 0 && (
+                                                        <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-semibold text-blue-600 ring-1 ring-blue-500">
+                                                            {document.attachments.length}
+                                                        </span>
+                                                    )}
+                                                </button>
 
                                             </td>
 
@@ -1672,14 +1860,13 @@ export default function Index({
                 )}
 
                 {/* =========================================================
-                    PDF MODAL
+                    PDF VIEWER MODAL
                 ========================================================= */}
                 {pdfModal.open &&
-                    pdfModal.docId &&
-                    pdfModal.attachment && (
+                    pdfModal.attachmentId && (
 
                         <div
-                            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4"
+                            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4"
                             onClick={closePdfModal}
                         >
                             <div
@@ -1711,19 +1898,11 @@ export default function Index({
                                 <div className="flex-1 overflow-hidden bg-gray-100">
 
                                     <iframe
-                                        /*
-                                         * IMPORTANT:
-                                         * React will completely recreate
-                                         * the iframe when the attachment
-                                         * changes.
-                                         */
-                                        key={`${pdfModal.docId}-${pdfModal.attachment}-${pdfModal.cacheKey}`}
+                                        key={pdfModal.attachmentId}
 
-                                        src={`${DocumentController.viewAttachment(
-                                            pdfModal.docId
-                                        ).url}?v=${encodeURIComponent(
-                                            pdfModal.cacheKey
-                                        )}`}
+                                        src={AttachmentController.view(
+                                            pdfModal.attachmentId
+                                        ).url}
 
                                         className="h-full w-full"
 
@@ -1737,6 +1916,396 @@ export default function Index({
                             </div>
                         </div>
                     )}
+
+                {/* =========================================================
+                    ATTACHMENTS MODAL
+                ========================================================= */}
+                {attachmentModal.open && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                        onClick={
+                            closeAttachmentModal
+                        }
+                    >
+                        <div
+                            className="w-full max-w-2xl rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) =>
+                                e.stopPropagation()
+                            }
+                        >
+
+                            <div className="flex items-start justify-between gap-3">
+
+                                <div>
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Attachments
+                                    </h2>
+
+                                    <p className="mt-0.5 text-sm text-gray-500">
+                                        {
+                                            attachmentModal.title
+                                        }
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeAttachmentModal
+                                    }
+                                    className="cursor-pointer rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+
+                            </div>
+
+                            <div className="mt-4 overflow-x-auto border-t border-gray-100 pt-4">
+
+                                {attachmentModal.attachments
+                                    .length === 0 ? (
+                                    <p className="text-sm text-gray-500">
+                                        No attachments for this document.
+                                    </p>
+                                ) : (
+
+                                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+
+                                        <thead>
+                                            <tr>
+
+                                                <th className="py-2 pr-2 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                                                    File Name
+                                                </th>
+
+                                                <th className="py-2 pr-2 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                                                    Size
+                                                </th>
+
+                                                <th className="py-2 pr-2 text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                                                    Uploaded
+                                                </th>
+
+                                                <th className="py-2 text-right text-xs font-medium uppercase tracking-wide text-gray-400">
+                                                    Actions
+                                                </th>
+
+                                            </tr>
+                                        </thead>
+
+                                        <tbody className="divide-y divide-gray-100">
+
+                                            {attachmentModal.attachments.map(
+                                                (
+                                                    attachment
+                                                ) => (
+                                                    <tr
+                                                        key={
+                                                            attachment.attachmentId
+                                                        }
+                                                    >
+
+                                                        <td className="py-2 pr-2 text-gray-700">
+                                                            <span className="flex items-center gap-1.5">
+                                                                <FileText className="h-4 w-4 shrink-0 text-gray-400" />
+
+                                                                <span className="max-w-[220px] truncate">
+                                                                    {
+                                                                        attachment.file_name
+                                                                    }
+                                                                </span>
+                                                            </span>
+                                                        </td>
+
+                                                        <td className="py-2 pr-2 text-gray-700 whitespace-nowrap">
+                                                            {formatFileSize(attachment.file_size)}
+                                                        </td>
+
+                                                        <td className="py-2 pr-2 text-gray-700 whitespace-nowrap">
+                                                            {formatDate(attachment.created_at)}
+                                                        </td>
+
+                                                        <td className="py-2 text-right whitespace-nowrap">
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    openPdfModal(
+                                                                        attachment
+                                                                    )
+                                                                }
+                                                                title="View PDF"
+                                                                aria-label="View PDF"
+                                                                className="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-blue-600 hover:bg-blue-50"
+                                                            >
+                                                                <FileText className="h-4 w-4" />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    openDeleteAttachment(
+                                                                        attachment
+                                                                    )
+                                                                }
+                                                                title="Delete Attachment"
+                                                                aria-label="Delete Attachment"
+                                                                className="ml-1 inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-red-600 hover:bg-red-50"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+
+                                                        </td>
+
+                                                    </tr>
+                                                )
+                                            )}
+
+                                        </tbody>
+                                    </table>
+                                )}
+
+                            </div>
+
+                            <div className="mt-5 flex items-center justify-between">
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        attachmentModal.docId &&
+                                        openAddAttachmentModal(
+                                            attachmentModal.docId
+                                        )
+                                    }
+                                    className="inline-flex cursor-pointer items-center gap-1 rounded-sm border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Attachment
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeAttachmentModal
+                                    }
+                                    className="inline-flex cursor-pointer items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                >
+                                    Close
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </div>
+                )}
+
+                {/* =========================================================
+                    ADD ATTACHMENT MODAL
+                ========================================================= */}
+                {addAttachmentModal.open && (
+                    <div
+                        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+                        onClick={
+                            closeAddAttachmentModal
+                        }
+                    >
+                        <div
+                            className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) =>
+                                e.stopPropagation()
+                            }
+                        >
+
+                            <div className="flex items-start justify-between gap-3">
+
+                                <h2 className="text-base font-semibold text-gray-900">
+                                    Add Attachment
+                                </h2>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeAddAttachmentModal
+                                    }
+                                    className="cursor-pointer rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+
+                            </div>
+
+                            <form
+                                onSubmit={
+                                    submitAddAttachment
+                                }
+                                className="mt-4 space-y-4 border-t border-gray-100 pt-4"
+                            >
+
+                                <div>
+
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        PDF File
+                                    </label>
+
+                                    <input
+                                        type="file"
+                                        accept="application/pdf,.pdf"
+                                        onChange={(e) =>
+                                            setAddAttachmentData(
+                                                'attachment',
+                                                e.target.files?.[0] ??
+                                                null
+                                            )
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm"
+                                        autoFocus
+                                    />
+
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        PDF only. Maximum 10 MB.
+                                    </p>
+
+                                    {addAttachmentErrors.attachment && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {
+                                                addAttachmentErrors.attachment
+                                            }
+                                        </p>
+                                    )}
+
+                                </div>
+
+                                <div className="mt-5 flex justify-end gap-2">
+
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            closeAddAttachmentModal
+                                        }
+                                        className="inline-flex cursor-pointer items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        disabled={
+                                            addAttachmentProcessing
+                                        }
+                                        className="inline-flex cursor-pointer items-center rounded-sm border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                        {
+                                            addAttachmentProcessing
+                                                ? 'Uploading...'
+                                                : 'Upload'
+                                        }
+                                    </button>
+
+                                </div>
+
+                            </form>
+
+                        </div>
+                    </div>
+                )}
+
+                {/* =========================================================
+                    DELETE ATTACHMENT MODAL
+                ========================================================= */}
+                {deleteAttachment && (
+                    <div
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+                        onClick={
+                            closeDeleteAttachment
+                        }
+                    >
+                        <div
+                            className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) =>
+                                e.stopPropagation()
+                            }
+                        >
+
+                            <div className="flex items-start justify-between gap-3">
+
+                                <div>
+
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Delete Attachment
+                                    </h2>
+
+                                    <p className="mt-0.5 text-sm text-gray-500">
+                                        This action cannot be undone.
+                                    </p>
+
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeDeleteAttachment
+                                    }
+                                    className="cursor-pointer rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+
+                            </div>
+
+                            <p className="mt-4 text-sm text-gray-700">
+                                Are you sure you want to
+                                delete{' '}
+
+                                <span className="font-medium text-gray-900">
+                                    "
+                                    {
+                                        deleteAttachment.file_name
+                                    }
+                                    "
+                                </span>
+                                ?
+                            </p>
+
+                            <div className="mt-5 flex items-center justify-end gap-3">
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeDeleteAttachment
+                                    }
+                                    disabled={
+                                        deleteAttachmentProcessing
+                                    }
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        confirmDeleteAttachment
+                                    }
+                                    disabled={
+                                        deleteAttachmentProcessing
+                                    }
+                                    className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    {
+                                        deleteAttachmentProcessing
+                                            ? 'Deleting...'
+                                            : 'Delete'
+                                    }
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </div>
+                )}
 
                 {/* =========================================================
                     DATE DETAILS MODAL
@@ -2912,40 +3481,6 @@ export default function Index({
 
                                 </div>
 
-                                {/* Attachment */}
-                                <div>
-
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        PDF Attachment
-                                    </label>
-
-                                    <input
-                                        type="file"
-                                        accept="application/pdf,.pdf"
-                                        onChange={(e) =>
-                                            setCreateData(
-                                                'attachment',
-                                                e.target.files?.[0] ??
-                                                null
-                                            )
-                                        }
-                                        className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm"
-                                    />
-
-                                    <p className="mt-1 text-xs text-gray-500">
-                                        PDF only. Maximum 10 MB.
-                                    </p>
-
-                                    {createErrors.attachment && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {
-                                                createErrors.attachment
-                                            }
-                                        </p>
-                                    )}
-
-                                </div>
-
                                 {/* Status */}
                                 <div>
 
@@ -2985,6 +3520,11 @@ export default function Index({
                                     )}
 
                                 </div>
+
+                                <p className="text-xs text-gray-500">
+                                    You can attach PDFs after saving, from the
+                                    Attachments panel.
+                                </p>
 
                                 {/* Buttons */}
                                 <div className="flex items-center justify-end gap-3 pt-2">
@@ -3193,9 +3733,9 @@ export default function Index({
 
                                     <DocumentTypeCombobox
                                         documentTypes={documentTypes}
-                                        value={createData.docType}
-                                        onChange={(value) => setCreateData('docType', value)}
-                                        error={createErrors.docType}
+                                        value={editData.docType}
+                                        onChange={(value) => setEditData('docType', value)}
+                                        error={editErrors.docType}
                                     />
                                 </div>
 
@@ -3253,82 +3793,31 @@ export default function Index({
 
                                 </div>
 
-                                {/* =================================================
-                                    CURRENT PDF
-                                ================================================= */}
-                                {editDocument.attachment && (
-                                    <div className="rounded-sm bg-gray-50 p-3">
+                                <div className="rounded-sm bg-gray-50 p-3">
 
-                                        <p className="text-sm text-gray-600">
-                                            Existing attachment
-                                        </p>
-
-                                        <p className="mt-1 truncate text-xs text-gray-400">
-                                            {
-                                                editDocument.attachment
-                                            }
-                                        </p>
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                openPdfModal(
-                                                    editDocument
-                                                )
-                                            }
-                                            className="mt-2 inline-flex cursor-pointer items-center rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
-                                        >
-                                            <FileText className="mr-2 h-4 w-4" />
-                                            View Current PDF
-                                        </button>
-
-                                    </div>
-                                )}
-
-                                {/* =================================================
-                                    REPLACE PDF
-                                ================================================= */}
-                                <div>
-
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Replace PDF
-                                    </label>
-
-                                    <input
-                                        type="file"
-                                        accept="application/pdf,.pdf"
-                                        onChange={(e) =>
-                                            setEditData(
-                                                'attachment',
-                                                e.target.files?.[0] ??
-                                                null
-                                            )
+                                    <p className="text-sm text-gray-600">
+                                        {
+                                            editDocument.attachments.length
+                                        }{' '}
+                                        attachment
+                                        {
+                                            editDocument.attachments.length === 1
+                                                ? ''
+                                                : 's'
                                         }
-                                        className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm"
-                                    />
-
-                                    <p className="mt-1 text-xs text-gray-500">
-                                        Leave empty to keep the current PDF.
                                     </p>
 
-                                    {editData.attachment && (
-                                        <p className="mt-1 text-xs text-green-600">
-                                            New PDF selected:{' '}
-                                            {
-                                                editData
-                                                    .attachment
-                                                    .name
-                                            }
-                                        </p>
-                                    )}
-
-                                    {editErrors.attachment && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {
-                                                editErrors.attachment
-                                            }
-                                        </p>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            closeEdit();
+                                            openAttachmentModal(editDocument);
+                                        }}
+                                        className="mt-2 inline-flex cursor-pointer items-center rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
+                                    >
+                                        <Paperclip className="mr-2 h-4 w-4" />
+                                        Manage Attachments
+                                    </button>
 
                                 </div>
 

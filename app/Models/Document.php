@@ -28,7 +28,6 @@ class Document extends Model
         'date',
         'soft_copy',
         'status',
-        'attachment',
         'created_by',
         'updated_by',
     ];
@@ -40,17 +39,11 @@ class Document extends Model
         'deleted_at' => 'datetime',
     ];
 
-    /**
-     * Route model binding uses docId.
-     */
     public function getRouteKeyName(): string
     {
         return 'docId';
     }
 
-    /**
-     * Party associated with this document.
-     */
     public function party(): BelongsTo
     {
         return $this->belongsTo(
@@ -60,9 +53,6 @@ class Document extends Model
         );
     }
 
-    /**
-     * Document type associated with this document.
-     */
     public function documentType(): BelongsTo
     {
         return $this->belongsTo(
@@ -72,9 +62,6 @@ class Document extends Model
         );
     }
 
-    /**
-     * User who created this document.
-     */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(
@@ -84,9 +71,6 @@ class Document extends Model
         );
     }
 
-    /**
-     * User who last updated this document.
-     */
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(
@@ -96,9 +80,6 @@ class Document extends Model
         );
     }
 
-    /**
-     * Date details associated with this document.
-     */
     public function dateDetails(): HasMany
     {
         return $this->hasMany(
@@ -109,8 +90,17 @@ class Document extends Model
     }
 
     /**
-     * Automatically set created_by and updated_by.
+     * Attachments (PDFs) belonging to this document.
      */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(
+            Attachment::class,
+            'docId',
+            'docId'
+        );
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Document $document) {

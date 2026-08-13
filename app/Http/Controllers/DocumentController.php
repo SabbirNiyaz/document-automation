@@ -10,15 +10,11 @@ use App\Models\DocumentType;
 use App\Models\PartyMaster;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DocumentController extends Controller
 {
-    /**
-     * Display documents.
-     */
     public function index(Request $request): Response
     {
         $search = $request->string('search')->toString();
@@ -34,6 +30,9 @@ class DocumentController extends Controller
                     ->where('status', 'Active')
                     ->with('dateType:dateTypeId,dateTypeName')
                     ->orderBy('date_value');
+            },
+            'attachments' => function ($query) {
+                $query->orderByDesc('created_at');
             },
         ])
             ->when(
@@ -70,8 +69,6 @@ class DocumentController extends Controller
 
                     'status' => $document->status,
 
-                    'attachment' => $document->attachment,
-
                     'created_at' => $document->created_at,
                     'created_by' => $document->createdBy,
 
@@ -89,6 +86,16 @@ class DocumentController extends Controller
                             'notification_before_days' => $detail->notification_before_days,
                             'notification_after_days' => $detail->notification_after_days,
                             'status' => $detail->status,
+                        ]
+                    ),
+
+                    'attachments' => $document->attachments->map(
+                        fn ($attachment) => [
+                            'attachmentId' => $attachment->attachmentId,
+                            'file_name' => $attachment->file_name,
+                            'file_type' => $attachment->file_type,
+                            'file_size' => $attachment->file_size,
+                            'created_at' => $attachment->created_at,
                         ]
                     ),
                 ];
@@ -135,24 +142,10 @@ class DocumentController extends Controller
         ]);
     }
 
-    /**
-     * Store document.
-     */
     public function store(
         DocumentRequest $request
     ): RedirectResponse {
-        $data = $request->validated();
-
-        /*
-         * Upload PDF attachment.
-         */
-        if ($request->hasFile('attachment')) {
-            $data['attachment'] = $request
-                ->file('attachment')
-                ->store('documents', 'public');
-        }
-
-        Document::create($data);
+        Document::create($request->validated());
 
         return redirect()
             ->route('documents.index')
@@ -162,64 +155,12 @@ class DocumentController extends Controller
             );
     }
 
-    /**
-     * Update document.
-     */
     public function update(
         DocumentRequest $request,
         Document $document
     ): RedirectResponse {
-        $data = $request->validated();
-
-        /*
-         * Keep the old attachment path.
-         */
-        $oldAttachment = $document->attachment;
-
-        /*
-         * Upload new PDF if one was selected.
-         */
-        if ($request->hasFile('attachment')) {
-            $newPath = $request
-                ->file('attachment')
-                ->store('documents', 'public');
-
-            /*
-             * Make sure upload succeeded.
-             */
-            if (!$newPath) {
-                return redirect()
-                    ->route('documents.index')
-                    ->with(
-                        'error',
-                        'PDF attachment could not be uploaded.'
-                    );
-            }
-
-            /*
-             * Replace the attachment path in the database data.
-             */
-            $data['attachment'] = $newPath;
-        }
-
-        /*
-         * Update the document.
-         */
-        $document->fill($data);
+        $document->fill($request->validated());
         $document->save();
-
-        /*
-         * Delete the previous PDF only after
-         * the database update succeeded.
-         */
-        if (
-            $oldAttachment &&
-            isset($data['attachment']) &&
-            $oldAttachment !== $data['attachment'] &&
-            Storage::disk('public')->exists($oldAttachment)
-        ) {
-            Storage::disk('public')->delete($oldAttachment);
-        }
 
         return redirect()
             ->route('documents.index')
@@ -229,9 +170,6 @@ class DocumentController extends Controller
             );
     }
 
-    /**
-     * Delete document.
-     */
     public function destroy(
         Document $document
     ): RedirectResponse {
@@ -243,61 +181,5 @@ class DocumentController extends Controller
                 'success',
                 'Document deleted successfully.'
             );
-    }
-
-    /**
-     * View PDF attachment.
-     */
-    public function viewAttachment(Document $document)
-    {
-        /*
-         * Make sure the document has an attachment.
-         */
-        if (!$document->attachment) {
-            abort(404, 'Attachment not found.');
-        }
-
-        /*
-         * Check that the actual file exists.
-         */
-        if (
-            !Storage::disk('public')->exists(
-                $document->attachment
-            )
-        ) {
-            abort(404, 'Attachment file not found.');
-        }
-
-        /*
-         * Get the actual physical file path.
-         */
-        $path = Storage::disk('public')->path(
-            $document->attachment
-        );
-
-        /*
-         * Return the current PDF.
-         *
-         * The cache headers are intentionally aggressive
-         * so the browser does not reuse an old PDF.
-         */
-        return response()->file(
-            $path,
-            [
-                'Content-Type' => 'application/pdf',
-
-                'Content-Disposition' =>
-                    'inline; filename="' .
-                    basename($path) .
-                    '"',
-
-                'Cache-Control' =>
-                    'no-store, no-cache, must-revalidate, max-age=0, private',
-
-                'Pragma' => 'no-cache',
-
-                'Expires' => '0',
-            ]
-        );
     }
 }
