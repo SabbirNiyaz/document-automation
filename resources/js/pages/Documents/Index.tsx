@@ -1685,9 +1685,14 @@ export default function Index({
                                             }
                                             title="View Dates"
                                             aria-label="View Dates"
-                                            className="inline-flex items-center justify-center rounded-md bg-purple-500 p-2 text-white hover:bg-purple-600 cursor-pointer"
+                                            className="relative inline-flex items-center justify-center rounded-md bg-purple-500 p-2 text-white hover:bg-purple-600 cursor-pointer"
                                         >
                                             <Calendar className="h-4 w-4" />
+                                            {document.dateDetails.filter((d) => d.status === 'Active').length > 0 && (
+                                                <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-semibold text-purple-600 ring-1 ring-purple-500">
+                                                    {document.dateDetails.filter((d) => d.status === 'Active').length}
+                                                </span>
+                                            )}
                                         </button>
 
                                         <button
@@ -1894,9 +1899,14 @@ export default function Index({
                                                     }
                                                     title="View Dates"
                                                     aria-label="View Dates"
-                                                    className="inline-flex items-center justify-center rounded-md bg-purple-500 p-2 text-white hover:bg-purple-600 cursor-pointer"
+                                                    className="relative inline-flex items-center justify-center rounded-md bg-purple-500 p-2 text-white hover:bg-purple-600 cursor-pointer"
                                                 >
                                                     <Calendar className="h-4 w-4" />
+                                                    {document.dateDetails.filter((d) => d.status === 'Active').length > 0 && (
+                                                        <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-semibold text-purple-600 ring-1 ring-purple-500">
+                                                            {document.dateDetails.filter((d) => d.status === 'Active').length}
+                                                        </span>
+                                                    )}
                                                 </button>
 
                                             </td>
