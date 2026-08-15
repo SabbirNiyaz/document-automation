@@ -206,12 +206,6 @@ class DateDetailController extends Controller
                 'success',
                 'Date detail updated.'
             );
-        // return redirect()
-        //     ->route('date-details.index')
-        //     ->with(
-        //         'success',
-        //         'Date detail updated.'
-        //     );
     }
 
     /**
