@@ -41,7 +41,7 @@ class DocumentTypeController extends Controller
                 fn ($q) => $q->where('status', $status)
             )
             ->orderByDesc('document_id')
-            ->paginate(10)
+            ->paginate(15)
             ->withQueryString();
 
         $documentTypes->through(

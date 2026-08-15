@@ -33,7 +33,7 @@ class PartyTypeController extends Controller
                 fn ($q) => $q->where('status', $status)
             )
             ->orderByDesc('partyTypeId')
-            ->paginate(10)
+            ->paginate(15)
             ->withQueryString();
 
         $partyTypes->through(fn (PartyType $partyType) => [

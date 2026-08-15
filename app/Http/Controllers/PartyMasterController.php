@@ -33,7 +33,7 @@ class PartyMasterController extends Controller
                 )
             )
             ->orderByDesc('partyId')
-            ->paginate(10)
+            ->paginate(15)
             ->withQueryString();
 
         $partyMasters->through(

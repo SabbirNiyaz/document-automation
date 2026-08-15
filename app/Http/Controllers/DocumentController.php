@@ -53,7 +53,7 @@ class DocumentController extends Controller
                 fn ($q) => $q->where('status', $status)
             )
             ->orderByDesc('docId')
-            ->paginate(10)
+            ->paginate(15)
             ->withQueryString();
 
         $documents->through(

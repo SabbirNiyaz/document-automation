@@ -36,7 +36,7 @@ class DateTypeController extends Controller
                 fn ($q) => $q->where('status', $status)
             )
             ->orderByDesc('dateTypeId')
-            ->paginate(10)
+            ->paginate(15)
             ->withQueryString();
 
         $dateTypes->through(
