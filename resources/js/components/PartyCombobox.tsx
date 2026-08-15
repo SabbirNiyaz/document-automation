@@ -1,36 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
 
-interface DocumentType {
-    document_id: number;
-    document_name: string;
+interface Party {
+    partyId: number;
+    partyName: string;
 }
 
-interface DocumentTypeComboboxProps {
+interface PartyComboboxProps {
     id?: string;
-    documentTypes: DocumentType[];
+    parties: Party[];
     value: string;
     onChange: (value: string) => void;
     error?: string;
 }
 
-export default function DocumentTypeCombobox({
+export default function PartyCombobox({
     id,
-    documentTypes,
+    parties,
     value,
     onChange,
     error,
-}: DocumentTypeComboboxProps) {
+}: PartyComboboxProps) {
     const [query, setQuery] = useState('');
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    const selected = documentTypes.find(
-        (dt) => String(dt.document_id) === String(value),
+    const selected = parties.find(
+        (p) => String(p.partyId) === String(value),
     );
 
     // Keep the visible input text in sync with the selected value
     useEffect(() => {
-        setQuery(selected ? selected.document_name : '');
+        setQuery(selected ? selected.partyName : '');
     }, [selected]);
 
     // Close dropdown when clicking outside
@@ -41,7 +41,7 @@ export default function DocumentTypeCombobox({
                 !wrapperRef.current.contains(e.target as Node)
             ) {
                 setOpen(false);
-                setQuery(selected ? selected.document_name : '');
+                setQuery(selected ? selected.partyName : '');
             }
         }
 
@@ -50,13 +50,13 @@ export default function DocumentTypeCombobox({
             document.removeEventListener('mousedown', handleClickOutside);
     }, [selected]);
 
-    const filtered = documentTypes.filter((dt) =>
-        dt.document_name.toLowerCase().includes(query.toLowerCase()),
+    const filtered = parties.filter((p) =>
+        p.partyName.toLowerCase().includes(query.toLowerCase()),
     );
 
-    function handleSelect(dt: DocumentType) {
-        onChange(String(dt.document_id));
-        setQuery(dt.document_name);
+    function handleSelect(p: Party) {
+        onChange(String(p.partyId));
+        setQuery(p.partyName);
         setOpen(false);
     }
 
@@ -74,7 +74,7 @@ export default function DocumentTypeCombobox({
                     }
                 }}
                 onFocus={() => setOpen(true)}
-                placeholder="Search document type and select"
+                placeholder="Search party and select"
                 autoComplete="off"
                 className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
                 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
@@ -83,18 +83,18 @@ export default function DocumentTypeCombobox({
             {open && filtered.length > 0 && (
                 <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-sm 
                 border border-gray-200 bg-white py-1 text-sm shadow-lg">
-                    {filtered.map((dt) => (
+                    {filtered.map((p) => (
                         <li
-                            key={dt.document_id}
-                            onClick={() => handleSelect(dt)}
+                            key={p.partyId}
+                            onClick={() => handleSelect(p)}
                             className={
                                 'cursor-pointer px-3 py-2 hover:bg-indigo-50 ' +
-                                (String(dt.document_id) === String(value)
+                                (String(p.partyId) === String(value)
                                     ? 'bg-indigo-100 font-medium text-indigo-700'
                                     : 'text-gray-700')
                             }
                         >
-                            {dt.document_name}
+                            {p.partyName}
                         </li>
                     ))}
                 </ul>
@@ -103,7 +103,7 @@ export default function DocumentTypeCombobox({
             {open && filtered.length === 0 && (
                 <div className="absolute z-10 mt-1 w-full rounded-sm border border-gray-200 
                 bg-white px-3 py-2 text-sm text-gray-500 shadow-lg">
-                    No document type found.
+                    No party found.
                 </div>
             )}
 

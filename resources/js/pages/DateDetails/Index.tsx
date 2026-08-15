@@ -13,6 +13,8 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
+import DateTypeCombobox from '@/components/DateTypeCombobox';
+import DocumentCombobox from '@/components/DocumentCombobox';
 
 interface User {
     id: number;
@@ -994,32 +996,13 @@ export default function Index({
                                     Date Type
                                 </label>
 
-                                <select
+                                <DateTypeCombobox
                                     id="create-dateTypeId"
+                                    dateTypes={dateTypes}
                                     value={createData.dateTypeId}
-                                    onChange={(e) =>
-                                        setCreateData('dateTypeId', e.target.value)
-                                    }
-                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
-                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option value="">Select Date Type</option>
-
-                                    {dateTypes.map((dateType) => (
-                                        <option
-                                            key={dateType.dateTypeId}
-                                            value={dateType.dateTypeId}
-                                        >
-                                            {dateType.dateTypeName}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                {createErrors.dateTypeId && (
-                                    <p className="mt-1 text-sm text-red-600">
-                                        {createErrors.dateTypeId}
-                                    </p>
-                                )}
+                                    onChange={(value) => setCreateData('dateTypeId', value)}
+                                    error={createErrors.dateTypeId}
+                                />
                             </div>
 
                             {/* Document Title */}
@@ -1031,32 +1014,13 @@ export default function Index({
                                     Document Title
                                 </label>
 
-                                <select
+                                <DocumentCombobox
                                     id="create-docId"
+                                    documents={documents}
                                     value={createData.docId}
-                                    onChange={(e) =>
-                                        setCreateData('docId', e.target.value)
-                                    }
-                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
-                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option value="">Select Document</option>
-
-                                    {documents.map((document) => (
-                                        <option
-                                            key={document.docId}
-                                            value={document.docId}
-                                        >
-                                            {document.title}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                {createErrors.docId && (
-                                    <p className="mt-1 text-sm text-red-600">
-                                        {createErrors.docId}
-                                    </p>
-                                )}
+                                    onChange={(value) => setCreateData('docId', value)}
+                                    error={createErrors.docId}
+                                />
                             </div>
 
                             {/* Date */}
@@ -1317,32 +1281,13 @@ export default function Index({
                                     Date Type
                                 </label>
 
-                                <select
+                                <DateTypeCombobox
                                     id="edit-dateTypeId"
+                                    dateTypes={dateTypes}
                                     value={editData.dateTypeId}
-                                    onChange={(e) =>
-                                        setEditData('dateTypeId', e.target.value)
-                                    }
-                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
-                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option value="">Select Date Type</option>
-
-                                    {dateTypes.map((dateType) => (
-                                        <option
-                                            key={dateType.dateTypeId}
-                                            value={dateType.dateTypeId}
-                                        >
-                                            {dateType.dateTypeName}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                {editErrors.dateTypeId && (
-                                    <p className="mt-1 text-sm text-red-600">
-                                        {editErrors.dateTypeId}
-                                    </p>
-                                )}
+                                    onChange={(value) => setEditData('dateTypeId', value)}
+                                    error={editErrors.dateTypeId}
+                                />
                             </div>
 
                             {/* Document Title */}
@@ -1354,32 +1299,13 @@ export default function Index({
                                     Document Title
                                 </label>
 
-                                <select
+                                <DocumentCombobox
                                     id="edit-docId"
+                                    documents={documents}
                                     value={editData.docId}
-                                    onChange={(e) =>
-                                        setEditData('docId', e.target.value)
-                                    }
-                                    className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm 
-                                    px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option value="">Select Document</option>
-
-                                    {documents.map((document) => (
-                                        <option
-                                            key={document.docId}
-                                            value={document.docId}
-                                        >
-                                            {document.title}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                {editErrors.docId && (
-                                    <p className="mt-1 text-sm text-red-600">
-                                        {editErrors.docId}
-                                    </p>
-                                )}
+                                    onChange={(value) => setEditData('docId', value)}
+                                    error={editErrors.docId}
+                                />
                             </div>
 
                             {/* Date */}

@@ -15,6 +15,7 @@ import {
     Plus,
 } from 'lucide-react';
 import DocumentTypeCombobox from '@/components/DocumentTypeCombobox';
+import PartyCombobox from '@/components/PartyCombobox';
 
 interface User {
     id: number;
@@ -3780,55 +3781,16 @@ export default function Index({
 
                                 {/* Party */}
                                 <div>
-
                                     <label className="block text-sm font-medium text-gray-700">
                                         Party
                                     </label>
 
-                                    <select
-                                        value={
-                                            createData.partyName
-                                        }
-                                        onChange={(e) =>
-                                            setCreateData(
-                                                'partyName',
-                                                e.target.value
-                                            )
-                                        }
-                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                    >
-
-                                        <option value="">
-                                            Select Party
-                                        </option>
-
-                                        {parties.map(
-                                            (party) => (
-                                                <option
-                                                    key={
-                                                        party.partyId
-                                                    }
-                                                    value={
-                                                        party.partyId
-                                                    }
-                                                >
-                                                    {
-                                                        party.partyName
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-
-                                    </select>
-
-                                    {createErrors.partyName && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {
-                                                createErrors.partyName
-                                            }
-                                        </p>
-                                    )}
-
+                                    <PartyCombobox
+                                        parties={parties}
+                                        value={createData.partyName}
+                                        onChange={(value) => setCreateData('partyName', value)}
+                                        error={createErrors.partyName}
+                                    />
                                 </div>
 
                                 {/* Document Type */}
@@ -4093,55 +4055,16 @@ export default function Index({
 
                                 {/* Party */}
                                 <div>
-
                                     <label className="block text-sm font-medium text-gray-700">
                                         Party
                                     </label>
 
-                                    <select
-                                        value={
-                                            editData.partyName
-                                        }
-                                        onChange={(e) =>
-                                            setEditData(
-                                                'partyName',
-                                                e.target.value
-                                            )
-                                        }
-                                        className="mt-1 block w-full cursor-pointer rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                    >
-
-                                        <option value="">
-                                            Select Party
-                                        </option>
-
-                                        {parties.map(
-                                            (party) => (
-                                                <option
-                                                    key={
-                                                        party.partyId
-                                                    }
-                                                    value={
-                                                        party.partyId
-                                                    }
-                                                >
-                                                    {
-                                                        party.partyName
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-
-                                    </select>
-
-                                    {editErrors.partyName && (
-                                        <p className="mt-1 text-sm text-red-600">
-                                            {
-                                                editErrors.partyName
-                                            }
-                                        </p>
-                                    )}
-
+                                    <PartyCombobox
+                                        parties={parties}
+                                        value={editData.partyName}
+                                        onChange={(value) => setEditData('partyName', value)}
+                                        error={editErrors.partyName}
+                                    />
                                 </div>
 
                                 {/* Document Type */}

@@ -1,39 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
 
-interface DocumentType {
-    document_id: number;
-    document_name: string;
+interface Document {
+    docId: number;
+    title: string;
 }
 
-interface DocumentTypeComboboxProps {
+interface DocumentComboboxProps {
     id?: string;
-    documentTypes: DocumentType[];
+    documents: Document[];
     value: string;
     onChange: (value: string) => void;
     error?: string;
 }
 
-export default function DocumentTypeCombobox({
+export default function DocumentCombobox({
     id,
-    documentTypes,
+    documents,
     value,
     onChange,
     error,
-}: DocumentTypeComboboxProps) {
+}: DocumentComboboxProps) {
     const [query, setQuery] = useState('');
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    const selected = documentTypes.find(
-        (dt) => String(dt.document_id) === String(value),
+    const selected = documents.find(
+        (d) => String(d.docId) === String(value),
     );
 
-    // Keep the visible input text in sync with the selected value
     useEffect(() => {
-        setQuery(selected ? selected.document_name : '');
+        setQuery(selected ? selected.title : '');
     }, [selected]);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
             if (
@@ -41,7 +39,7 @@ export default function DocumentTypeCombobox({
                 !wrapperRef.current.contains(e.target as Node)
             ) {
                 setOpen(false);
-                setQuery(selected ? selected.document_name : '');
+                setQuery(selected ? selected.title : '');
             }
         }
 
@@ -50,13 +48,13 @@ export default function DocumentTypeCombobox({
             document.removeEventListener('mousedown', handleClickOutside);
     }, [selected]);
 
-    const filtered = documentTypes.filter((dt) =>
-        dt.document_name.toLowerCase().includes(query.toLowerCase()),
+    const filtered = documents.filter((d) =>
+        d.title.toLowerCase().includes(query.toLowerCase()),
     );
 
-    function handleSelect(dt: DocumentType) {
-        onChange(String(dt.document_id));
-        setQuery(dt.document_name);
+    function handleSelect(d: Document) {
+        onChange(String(d.docId));
+        setQuery(d.title);
         setOpen(false);
     }
 
@@ -74,7 +72,7 @@ export default function DocumentTypeCombobox({
                     }
                 }}
                 onFocus={() => setOpen(true)}
-                placeholder="Search document type and select"
+                placeholder="Search document title and select"
                 autoComplete="off"
                 className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm 
                 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
@@ -83,18 +81,18 @@ export default function DocumentTypeCombobox({
             {open && filtered.length > 0 && (
                 <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-sm 
                 border border-gray-200 bg-white py-1 text-sm shadow-lg">
-                    {filtered.map((dt) => (
+                    {filtered.map((d) => (
                         <li
-                            key={dt.document_id}
-                            onClick={() => handleSelect(dt)}
+                            key={d.docId}
+                            onClick={() => handleSelect(d)}
                             className={
                                 'cursor-pointer px-3 py-2 hover:bg-indigo-50 ' +
-                                (String(dt.document_id) === String(value)
+                                (String(d.docId) === String(value)
                                     ? 'bg-indigo-100 font-medium text-indigo-700'
                                     : 'text-gray-700')
                             }
                         >
-                            {dt.document_name}
+                            {d.title}
                         </li>
                     ))}
                 </ul>
@@ -103,7 +101,7 @@ export default function DocumentTypeCombobox({
             {open && filtered.length === 0 && (
                 <div className="absolute z-10 mt-1 w-full rounded-sm border border-gray-200 
                 bg-white px-3 py-2 text-sm text-gray-500 shadow-lg">
-                    No document type found.
+                    No document found.
                 </div>
             )}
 
