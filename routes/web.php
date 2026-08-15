@@ -53,6 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Attachment Routes
     Route::post('attachments', [AttachmentController::class, 'store'])
         ->name('attachments.store');
+    
+    Route::put('attachments/{attachment}', [AttachmentController::class, 'update'])
+        ->name('attachments.update');
 
     Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy'])
         ->name('attachments.destroy');

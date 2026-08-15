@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AttachmentRequest;
+use App\Http\Requests\AttachmentUpdateRequest;
 use App\Models\Attachment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -22,8 +23,7 @@ class AttachmentController extends Controller
         $path = $file->store('documents', 'public');
 
         if (!$path) {
-            return redirect()
-                ->route('documents.index')
+            return back()
                 ->with(
                     'error',
                     'PDF attachment could not be uploaded.'
@@ -38,11 +38,65 @@ class AttachmentController extends Controller
             'file_size' => $file->getSize(),
         ]);
 
-        return redirect()
-            ->route('documents.index')
+        return back()
             ->with(
                 'success',
                 'Attachment uploaded successfully.'
+            );
+    }
+
+    /**
+     * Replace the PDF file on an existing attachment.
+     */
+    public function update(
+        AttachmentUpdateRequest $request,
+        Attachment $attachment
+    ): RedirectResponse {
+        if (!$request->hasFile('attachment')) {
+            
+            return back()
+                ->with(
+                    'success',
+                    'Attachment updated successfully.'
+                );
+        }
+
+        $file = $request->file('attachment');
+
+        $newPath = $file->store('documents', 'public');
+
+        if (!$newPath) {
+            return back()
+                ->with(
+                    'error',
+                    'PDF attachment could not be uploaded.'
+                );
+        }
+
+        /*
+         * Keep the old file path so it can be
+         * removed once the update succeeds.
+         */
+        $oldPath = $attachment->file_path;
+
+        $attachment->file_name = $file->getClientOriginalName();
+        $attachment->file_path = $newPath;
+        $attachment->file_type = $file->getClientMimeType();
+        $attachment->file_size = $file->getSize();
+        $attachment->save();
+
+        if (
+            $oldPath &&
+            $oldPath !== $newPath &&
+            Storage::disk('public')->exists($oldPath)
+        ) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return back()
+            ->with(
+                'success',
+                'Attachment updated successfully.'
             );
     }
 
@@ -54,8 +108,7 @@ class AttachmentController extends Controller
     ): RedirectResponse {
         $attachment->delete();
 
-        return redirect()
-            ->route('documents.index')
+        return back()
             ->with(
                 'success',
                 'Attachment deleted successfully.'

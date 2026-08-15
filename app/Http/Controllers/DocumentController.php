@@ -32,7 +32,11 @@ class DocumentController extends Controller
                     ->orderBy('date_value');
             },
             'attachments' => function ($query) {
-                $query->orderByDesc('created_at');
+                $query->orderByDesc('created_at')
+                        ->with([
+                            'createdBy:id,name',
+                            'updatedBy:id,name',
+                        ]);
             },
         ])
             ->when(
@@ -96,6 +100,9 @@ class DocumentController extends Controller
                             'file_type' => $attachment->file_type,
                             'file_size' => $attachment->file_size,
                             'created_at' => $attachment->created_at,
+                            'created_by' => $attachment->createdBy,
+                            'updated_at' => $attachment->updated_at,
+                            'updated_by' => $attachment->updatedBy,
                         ]
                     ),
                 ];

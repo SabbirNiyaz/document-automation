@@ -41,9 +41,6 @@ class Attachment extends Model
         return 'attachmentId';
     }
 
-    /**
-     * Document this attachment belongs to.
-     */
     public function document(): BelongsTo
     {
         return $this->belongsTo(
@@ -53,9 +50,6 @@ class Attachment extends Model
         );
     }
 
-    /**
-     * User who created this attachment.
-     */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(
@@ -66,8 +60,17 @@ class Attachment extends Model
     }
 
     /**
-     * Automatically set created_by / updated_by.
+     * User who last updated this attachment.
      */
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(
+            User::class,
+            'updated_by',
+            'id'
+        );
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Attachment $attachment) {

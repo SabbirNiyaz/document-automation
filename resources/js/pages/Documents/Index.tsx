@@ -3,6 +3,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import DocumentController from '@/actions/App/Http/Controllers/DocumentController';
 import DateDetailController from '@/actions/App/Http/Controllers/DateDetailController';
 import AttachmentController from '@/actions/App/Http/Controllers/AttachmentController';
+
 import {
     Info as InfoIcon,
     Pencil,
@@ -48,6 +49,9 @@ interface AttachmentItem {
     file_type: string | null;
     file_size: number | null;
     created_at: string | null;
+    created_by: User | null;
+    updated_at: string | null;
+    updated_by: User | null;
 }
 
 interface DocumentItem {
@@ -751,6 +755,84 @@ export default function Index({
 
     /*
     |--------------------------------------------------------------------------
+    | Attachment Info Modal
+    |--------------------------------------------------------------------------
+    */
+    const [infoAttachment, setInfoAttachment] =
+        useState<AttachmentItem | null>(null);
+
+    function openAttachmentInfo(attachment: AttachmentItem) {
+        setInfoAttachment(attachment);
+    }
+
+    function closeAttachmentInfo() {
+        setInfoAttachment(null);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Edit Attachment Modal (replace PDF)
+    |--------------------------------------------------------------------------
+    */
+    const [editAttachment, setEditAttachment] =
+        useState<AttachmentItem | null>(null);
+
+    const {
+        data: editAttachmentData,
+        setData: setEditAttachmentData,
+        post: postEditAttachment,
+        processing: editAttachmentProcessing,
+        errors: editAttachmentErrors,
+        reset: resetEditAttachment,
+        clearErrors: clearEditAttachmentErrors,
+    } = useForm({
+        attachment: null as File | null,
+        _method: 'PUT',
+    });
+
+    function openEditAttachment(attachment: AttachmentItem) {
+        resetEditAttachment();
+        clearEditAttachmentErrors();
+
+        setEditAttachmentData({
+            attachment: null,
+            _method: 'PUT',
+        });
+
+        setEditAttachment(attachment);
+    }
+
+    function closeEditAttachment() {
+        setEditAttachment(null);
+        resetEditAttachment();
+        clearEditAttachmentErrors();
+    }
+
+    function submitEditAttachment(e: FormEvent) {
+        e.preventDefault();
+
+        if (!editAttachment) {
+            return;
+        }
+
+        postEditAttachment(
+            AttachmentController.update(
+                editAttachment.attachmentId
+            ).url,
+            {
+                forceFormData: true,
+                preserveScroll: true,
+
+                onSuccess: () => {
+                    closeEditAttachment();
+                    closeAttachmentModal();
+                },
+            }
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Escape Key Handlers
     |--------------------------------------------------------------------------
     */
@@ -1023,6 +1105,58 @@ export default function Index({
             );
         };
     }, [deleteAttachment]);
+
+    useEffect(() => {
+        if (!infoAttachment) {
+            return;
+        }
+
+        function handleKeyDown(
+            e: KeyboardEvent
+        ) {
+            if (e.key === 'Escape') {
+                closeAttachmentInfo();
+            }
+        }
+
+        document.addEventListener(
+            'keydown',
+            handleKeyDown
+        );
+
+        return () => {
+            document.removeEventListener(
+                'keydown',
+                handleKeyDown
+            );
+        };
+    }, [infoAttachment]);
+
+    useEffect(() => {
+        if (!editAttachment) {
+            return;
+        }
+
+        function handleKeyDown(
+            e: KeyboardEvent
+        ) {
+            if (e.key === 'Escape') {
+                closeEditAttachment();
+            }
+        }
+
+        document.addEventListener(
+            'keydown',
+            handleKeyDown
+        );
+
+        return () => {
+            document.removeEventListener(
+                'keydown',
+                handleKeyDown
+            );
+        };
+    }, [editAttachment]);
 
     /*
     |--------------------------------------------------------------------------
@@ -2031,15 +2165,43 @@ export default function Index({
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
+                                                                    openAttachmentInfo(
+                                                                        attachment
+                                                                    )
+                                                                }
+                                                                title="Info"
+                                                                aria-label="Info"
+                                                                className="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-gray-500 hover:bg-gray-100"
+                                                            >
+                                                                <InfoIcon className="h-4 w-4" />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
                                                                     openPdfModal(
                                                                         attachment
                                                                     )
                                                                 }
                                                                 title="View PDF"
                                                                 aria-label="View PDF"
-                                                                className="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-blue-600 hover:bg-blue-50"
+                                                                className="ml-1 inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-blue-600 hover:bg-blue-50"
                                                             >
                                                                 <FileText className="h-4 w-4" />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    openEditAttachment(
+                                                                        attachment
+                                                                    )
+                                                                }
+                                                                title="Replace PDF"
+                                                                aria-label="Replace PDF"
+                                                                className="ml-1 inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-yellow-600 hover:bg-yellow-50"
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
                                                             </button>
 
                                                             <button
@@ -2302,6 +2464,253 @@ export default function Index({
                                 </button>
 
                             </div>
+
+                        </div>
+                    </div>
+                )}
+
+                {/* =========================================================
+                    ATTACHMENT INFO MODAL
+                ========================================================= */}
+                {infoAttachment && (
+                    <div
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeAttachmentInfo}
+                    >
+                        <div
+                            className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) =>
+                                e.stopPropagation()
+                            }
+                        >
+
+                            <div className="flex items-start justify-between gap-3">
+
+                                <div>
+
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Attachment Info
+                                    </h2>
+
+                                    <p className="mt-0.5 truncate text-sm text-gray-500">
+                                        {
+                                            infoAttachment.file_name
+                                        }
+                                    </p>
+
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeAttachmentInfo
+                                    }
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+
+                            </div>
+
+                            <dl className="mt-4 grid grid-cols-1 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2 sm:gap-x-4">
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Created
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {formatDate(
+                                            infoAttachment.created_at
+                                        )}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Created By
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {infoAttachment.created_by
+                                            ? `${infoAttachment.created_by.name} (ID: ${infoAttachment.created_by.id})`
+                                            : '—'}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Updated
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {formatDate(
+                                            infoAttachment.updated_at
+                                        )}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Updated By
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {infoAttachment.updated_by
+                                            ? `${infoAttachment.updated_by.name} (ID: ${infoAttachment.updated_by.id})`
+                                            : '—'}
+                                    </dd>
+                                </div>
+
+                            </dl>
+
+                            <div className="mt-5 flex justify-end">
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeAttachmentInfo
+                                    }
+                                    className="inline-flex items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                >
+                                    Close
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </div>
+                )}
+
+                {/* =========================================================
+                    EDIT ATTACHMENT MODAL (replace PDF)
+                ========================================================= */}
+                {editAttachment && (
+                    <div
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+                        onClick={
+                            closeEditAttachment
+                        }
+                    >
+                        <div
+                            className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) =>
+                                e.stopPropagation()
+                            }
+                        >
+
+                            <div className="flex items-start justify-between gap-3">
+
+                                <div>
+
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Replace Attachment
+                                    </h2>
+
+                                    <p className="mt-0.5 truncate text-sm text-gray-500">
+                                        {
+                                            editAttachment.file_name
+                                        }
+                                    </p>
+
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeEditAttachment
+                                    }
+                                    className="cursor-pointer rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+
+                            </div>
+
+                            <form
+                                onSubmit={
+                                    submitEditAttachment
+                                }
+                                className="mt-4 space-y-4 border-t border-gray-100 pt-4"
+                            >
+
+                                <div>
+
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        New PDF File
+                                    </label>
+
+                                    <input
+                                        type="file"
+                                        accept="application/pdf,.pdf"
+                                        onChange={(e) =>
+                                            setEditAttachmentData(
+                                                'attachment',
+                                                e.target.files?.[0] ??
+                                                null
+                                            )
+                                        }
+                                        className="mt-1 block w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm"
+                                        autoFocus
+                                    />
+
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        PDF only. Maximum 10 MB. This will replace
+                                        the current file.
+                                    </p>
+
+                                    {editAttachmentData.attachment && (
+                                        <p className="mt-1 text-xs text-green-600">
+                                            New PDF selected:{' '}
+                                            {
+                                                editAttachmentData
+                                                    .attachment
+                                                    .name
+                                            }
+                                        </p>
+                                    )}
+
+                                    {editAttachmentErrors.attachment && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {
+                                                editAttachmentErrors.attachment
+                                            }
+                                        </p>
+                                    )}
+
+                                </div>
+
+                                <div className="mt-5 flex justify-end gap-2">
+
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            closeEditAttachment
+                                        }
+                                        className="inline-flex cursor-pointer items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        disabled={
+                                            editAttachmentProcessing
+                                        }
+                                        className="inline-flex cursor-pointer items-center rounded-sm border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                        {
+                                            editAttachmentProcessing
+                                                ? 'Uploading...'
+                                                : 'Replace'
+                                        }
+                                    </button>
+
+                                </div>
+
+                            </form>
 
                         </div>
                     </div>
