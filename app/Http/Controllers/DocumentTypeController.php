@@ -135,8 +135,7 @@ class DocumentTypeController extends Controller
             $request->validated()
         );
 
-        return redirect()
-            ->route('document-types.index')
+        return back()
             ->with(
                 'success',
                 'Document type updated.'
@@ -151,8 +150,7 @@ class DocumentTypeController extends Controller
     ): RedirectResponse {
         $document_type->delete();
 
-        return redirect()
-            ->route('document-types.index')
+        return back()
             ->with(
                 'success',
                 'Document type deleted.'

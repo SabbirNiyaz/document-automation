@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class DocumentRequest extends FormRequest
+class DocumentTypeRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,46 +15,18 @@ class DocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-
-            'title' => [
+            'document_name' => [
                 'required',
                 'string',
                 'max:255',
-            ],
-
-            'description' => [
-                'nullable',
-                'string',
-            ],
-
-            'partyName' => [
-                'required',
-                'integer',
-                'exists:party_master,partyId',
-            ],
-
-            'docType' => [
-                'required',
-                'integer',
-                'exists:document_type,document_id',
-            ],
-
-            'date' => [
-                'required',
-                'date',
-            ],
-
-            'soft_copy' => [
-                'nullable',
-                'string',
+                Rule::unique('document_type', 'document_name')
+                    ->ignore($this->route('document_type'), 'document_id')
+                    ->whereNull('deleted_at'),
             ],
 
             'status' => [
                 'required',
-                Rule::in([
-                    'Active',
-                    'Inactive',
-                ]),
+                Rule::in(['Active', 'Inactive']),
             ],
         ];
     }
@@ -62,36 +34,12 @@ class DocumentRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'document_name.required' => 'Document type name is required.',
+            'document_name.max' => 'Document type name cannot exceed 255 characters.',
+            'document_name.unique' => 'A document type with this name already exists.',
 
-            'title.required' =>
-                'Document title is required.',
-
-            'title.max' =>
-                'Document title cannot exceed 255 characters.',
-
-            'partyName.required' =>
-                'Please select a party.',
-
-            'partyName.exists' =>
-                'Selected party does not exist.',
-
-            'docType.required' =>
-                'Please select a document type.',
-
-            'docType.exists' =>
-                'Selected document type does not exist.',
-
-            'date.required' =>
-                'Document date is required.',
-
-            'date.date' =>
-                'Please enter a valid date.',
-
-            'status.required' =>
-                'Status is required.',
-
-            'status.in' =>
-                'Status must be Active or Inactive.',
+            'status.required' => 'Status is required.',
+            'status.in' => 'Status must be either Active or Inactive.',
         ];
     }
 }

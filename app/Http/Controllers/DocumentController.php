@@ -162,8 +162,7 @@ class DocumentController extends Controller
         $document->fill($request->validated());
         $document->save();
 
-        return redirect()
-            ->route('documents.index')
+        return back()
             ->with(
                 'success',
                 'Document updated successfully.'
@@ -175,8 +174,7 @@ class DocumentController extends Controller
     ): RedirectResponse {
         $document->delete();
 
-        return redirect()
-            ->route('documents.index')
+        return back()
             ->with(
                 'success',
                 'Document deleted successfully.'
