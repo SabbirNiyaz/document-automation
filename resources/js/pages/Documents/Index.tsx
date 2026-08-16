@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import DocumentTypeCombobox from '@/components/DocumentTypeCombobox';
 import PartyCombobox from '@/components/PartyCombobox';
+import DateTypeCombobox from '@/components/DateTypeCombobox';
 
 interface User {
     id: number;
@@ -2984,7 +2985,7 @@ export default function Index({
                                 className="mt-4 space-y-4 border-t border-gray-100 pt-4"
                             >
 
-                                <div>
+                                {/* <div>
 
                                     <label className="block text-sm font-medium text-gray-700">
                                         Date Type
@@ -3034,6 +3035,23 @@ export default function Index({
                                         </p>
                                     )}
 
+                                </div> */}
+                                {/* Date Type */}
+                                <div>
+                                    <label
+                                        htmlFor="create-dateTypeId"
+                                        className="block text-sm font-medium text-gray-700"
+                                    >
+                                        Date Type
+                                    </label>
+
+                                    <DateTypeCombobox
+                                        id="create-dateTypeId"
+                                        dateTypes={dateTypes}
+                                        value={addDateData.dateTypeId}
+                                        onChange={(value) => setAddDateData('dateTypeId', value)}
+                                        error={addDateErrors.dateTypeId}
+                                    />
                                 </div>
 
                                 <div>

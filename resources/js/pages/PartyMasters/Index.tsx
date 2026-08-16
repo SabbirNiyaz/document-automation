@@ -284,7 +284,7 @@ export default function Index({ partyMasters, partyTypes, filters }: Props) {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
-                            Party Masters
+                            Party Management
                         </h1>
 
                         <p className="mt-1 text-sm text-gray-500">
