@@ -44,13 +44,14 @@ class PartyMasterRequest extends FormRequest
 
             'phone' => [
                 'required',
-                'string',
-                'max:255',
+                'regex:/^[0-9]+$/',
+                'digits_between:4,15',
             ],
 
             'email' => [
                 'required',
-                'email',
+                'string',
+                'email:rfc,dns',
                 'max:255',
             ],
         ];
@@ -89,8 +90,11 @@ class PartyMasterRequest extends FormRequest
             'phone.required' =>
                 'Phone number is required.',
 
-            'phone.max' =>
-                'Phone number cannot exceed 255 characters.',
+            'phone.regex' =>
+                'Phone number must contain only digits (0-9).',
+
+            'phone.digits_between' =>
+                'Phone number must be between 4 and 15 digits.',
 
             'email.required' =>
                 'Email is required.',

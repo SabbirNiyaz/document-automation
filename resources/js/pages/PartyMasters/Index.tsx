@@ -276,7 +276,7 @@ export default function Index({ partyMasters, partyTypes, filters }: Props) {
 
     return (
         <>
-            <Head title="Party Masters" />
+            <Head title="Party Management" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-hidden rounded-sm p-3 sm:p-4">
 
@@ -903,7 +903,7 @@ export default function Index({ partyMasters, partyTypes, filters }: Props) {
 
                                 <input
                                     id="create-email"
-                                    type="email"
+                                    type="text"
                                     value={createData.email}
                                     onChange={(e) =>
                                         setCreateData('email', e.target.value)
@@ -1120,7 +1120,7 @@ export default function Index({ partyMasters, partyTypes, filters }: Props) {
 
                                 <input
                                     id="edit-email"
-                                    type="email"
+                                    type="text"
                                     value={editData.email}
                                     onChange={(e) =>
                                         setEditData('email', e.target.value)
