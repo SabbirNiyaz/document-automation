@@ -9,7 +9,6 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DateDetailController;
 use App\Http\Controllers\AttachmentController;
 
-// Route::inertia('/', 'welcome')->name('home');
 Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('documents.index');
@@ -19,7 +18,6 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Route::inertia('dashboard', 'dashboard')->name('dashboard');
 
     // Party Types Routes
     Route::resource('party-types', PartyTypeController::class)
@@ -40,10 +38,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('party-masters', PartyMasterController::class)
         ->parameters(['party-masters' => 'party_master'])
         ->except(['show']);
-    
-    // // Document Attachment Route (must come before the resource route)
-    // Route::get('documents/{document}/attachment', [DocumentController::class, 'viewAttachment'])
-    //     ->name('documents.attachment');
 
     // Document Routes
     Route::resource('documents', DocumentController::class)

@@ -130,11 +130,7 @@ export default function Index({
     const [showSuccess, setShowSuccess] = useState(false);
     const [showError, setShowError] = useState(false);
 
-    /*
-    |--------------------------------------------------------------------------
-    | PDF VIEWER MODAL (single file preview, reused by attachments list)
-    |--------------------------------------------------------------------------
-    */
+    // PDF VIEWER MODAL (single file preview, reused by attachments list)
     const [pdfModal, setPdfModal] = useState<{
         open: boolean;
         attachmentId: number | null;
@@ -161,11 +157,7 @@ export default function Index({
         });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Info Modal
-    |--------------------------------------------------------------------------
-    */
+    // Info Modal
     const [infoDocument, setInfoDocument] =
         useState<DocumentItem | null>(null);
 
@@ -177,11 +169,7 @@ export default function Index({
         setInfoDocument(null);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Create Modal
-    |--------------------------------------------------------------------------
-    */
+    // Create Modal
     const [showCreate, setShowCreate] = useState(false);
 
     const {
@@ -226,11 +214,7 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Edit Modal
-    |--------------------------------------------------------------------------
-    */
+    // Edit Modal
     const [editDocument, setEditDocument] =
         useState<DocumentItem | null>(null);
 
@@ -296,11 +280,7 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Delete Document
-    |--------------------------------------------------------------------------
-    */
+    // Delete Document
     const [deleteDocument, setDeleteDocument] =
         useState<DocumentItem | null>(null);
 
@@ -340,11 +320,8 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Date Details Modal
-    |--------------------------------------------------------------------------
-    */
+    // Date Details Modal
+
     const [dateModal, setDateModal] = useState<{
         open: boolean;
         docId: number | null;
@@ -377,11 +354,8 @@ export default function Index({
         });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Add Date Modal
-    |--------------------------------------------------------------------------
-    */
+    // Add Date Modal
+
     const [addDateModal, setAddDateModal] =
         useState<{
             open: boolean;
@@ -459,11 +433,8 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Edit Date Modal
-    |--------------------------------------------------------------------------
-    */
+    // Edit Date Modal
+
     const [editDateModal, setEditDateModal] =
         useState<{
             open: boolean;
@@ -559,11 +530,8 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Delete Date Detail
-    |--------------------------------------------------------------------------
-    */
+    // Delete Date Detail
+
     const [deleteDateDetail, setDeleteDateDetail] =
         useState<DateDetailItem | null>(null);
 
@@ -606,11 +574,8 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Attachments Modal (list, mirrors Date Details modal)
-    |--------------------------------------------------------------------------
-    */
+    // Attachments Modal (list, mirrors Date Details modal)
+
     const [attachmentModal, setAttachmentModal] = useState<{
         open: boolean;
         docId: number | null;
@@ -641,11 +606,8 @@ export default function Index({
         });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Add Attachment Modal
-    |--------------------------------------------------------------------------
-    */
+    // Add Attachment Modal
+
     const [addAttachmentModal, setAddAttachmentModal] =
         useState<{
             open: boolean;
@@ -710,11 +672,8 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Delete Attachment
-    |--------------------------------------------------------------------------
-    */
+    // Delete Attachment
+
     const [deleteAttachment, setDeleteAttachment] =
         useState<AttachmentItem | null>(null);
 
@@ -755,11 +714,8 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Attachment Info Modal
-    |--------------------------------------------------------------------------
-    */
+    // Attachment Info Modal
+
     const [infoAttachment, setInfoAttachment] =
         useState<AttachmentItem | null>(null);
 
@@ -771,11 +727,7 @@ export default function Index({
         setInfoAttachment(null);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Edit Attachment Modal (replace PDF)
-    |--------------------------------------------------------------------------
-    */
+    // Edit Attachment Modal (replace PDF)
     const [editAttachment, setEditAttachment] =
         useState<AttachmentItem | null>(null);
 
@@ -833,11 +785,7 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Escape Key Handlers
-    |--------------------------------------------------------------------------
-    */
+    // Escape Key Handlers
     useEffect(() => {
         if (!pdfModal.open) {
             return;
@@ -1160,11 +1108,7 @@ export default function Index({
         };
     }, [editAttachment]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Flash Messages
-    |--------------------------------------------------------------------------
-    */
+    // Flash Messages
     useEffect(() => {
         if (!flash?.success) {
             return;
@@ -1195,11 +1139,7 @@ export default function Index({
         return () => clearTimeout(timer);
     }, [flash?.error]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Search
-    |--------------------------------------------------------------------------
-    */
+    // Search
     function handleSearch(
         e: FormEvent
     ) {
@@ -1275,11 +1215,7 @@ export default function Index({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Formatting
-    |--------------------------------------------------------------------------
-    */
+    // Formatting
     function formatDate(
         value: string | null
     ) {
@@ -1384,9 +1320,7 @@ export default function Index({
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-hidden rounded-sm p-3 sm:p-4">
 
-                {/* =========================================================
-                    HEADER
-                ========================================================= */}
+                {/* HEADER */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">
@@ -1407,9 +1341,7 @@ export default function Index({
                     </button>
                 </div>
 
-                {/* =========================================================
-                    FLASH MESSAGES
-                ========================================================= */}
+                {/* FLASH MESSAGES */}
                 {showSuccess &&
                     flash?.success && (
                         <div className="rounded-sm bg-green-50 px-4 py-3 text-center text-sm text-green-700 shadow-sm">
@@ -1424,9 +1356,7 @@ export default function Index({
                         </div>
                     )}
 
-                {/* =========================================================
-                    SEARCH + STATUS
-                ========================================================= */}
+                {/* SEARCH + STATUS */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
                     <form
@@ -1515,18 +1445,14 @@ export default function Index({
                     </div>
                 </div>
 
-                {/* =========================================================
-                    EMPTY
-                ========================================================= */}
+                {/* EMPTY */}
                 {documents.data.length === 0 && (
                     <div className="rounded-sm border bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm">
                         No documents found.
                     </div>
                 )}
 
-                {/* =========================================================
-                    MOBILE DOCUMENT LIST
-                ========================================================= */}
+                {/* MOBILE DOCUMENT LIST */}
                 {documents.data.length > 0 && (
                     <div className="flex flex-col gap-3 lg:hidden">
                         {documents.data.map(
@@ -1731,9 +1657,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    DESKTOP TABLE
-                ========================================================= */}
+                {/* DESKTOP TABLE */}
                 {documents.data.length > 0 && (
                     <div className="hidden overflow-x-auto rounded-sm border bg-white shadow-sm lg:block">
 
@@ -1967,9 +1891,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    PAGINATION
-                ========================================================= */}
+                {/* PAGINATION*/}
                 {documents.links.length > 3 && (
                     <div className="flex flex-wrap justify-center gap-1 sm:justify-end">
 
@@ -2005,9 +1927,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    PDF VIEWER MODAL
-                ========================================================= */}
+                {/* PDF VIEWER MODAL*/}
                 {pdfModal.open &&
                     pdfModal.attachmentId && (
 
@@ -2063,9 +1983,7 @@ export default function Index({
                         </div>
                     )}
 
-                {/* =========================================================
-                    ATTACHMENTS MODAL
-                ========================================================= */}
+                {/* ATTACHMENTS MODAL */}
                 {attachmentModal.open && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -2274,9 +2192,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    ADD ATTACHMENT MODAL
-                ========================================================= */}
+                {/* ADD ATTACHMENT MODAL */}
                 {addAttachmentModal.open && (
                     <div
                         className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
@@ -2386,8 +2302,7 @@ export default function Index({
                 )}
 
                 {/* =========================================================
-                    DELETE ATTACHMENT MODAL
-                ========================================================= */}
+                    DELETE ATTACHMENT MODAL */}
                 {deleteAttachment && (
                     <div
                         className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
@@ -2481,9 +2396,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    ATTACHMENT INFO MODAL
-                ========================================================= */}
+                {/* ATTACHMENT INFO MODAL */}
                 {infoAttachment && (
                     <div
                         className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
@@ -2595,9 +2508,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    EDIT ATTACHMENT MODAL (replace PDF)
-                ========================================================= */}
+                {/* EDIT ATTACHMENT MODAL (replace PDF) */}
                 {editAttachment && (
                     <div
                         className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
@@ -2728,9 +2639,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    DATE DETAILS MODAL
-                ========================================================= */}
+                {/* DATE DETAILS MODAL */}
                 {dateModal.open && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -2942,9 +2851,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    ADD DATE MODAL
-                ========================================================= */}
+                {/* ADD DATE MODAL */}
                 {addDateModal.open && (
                     <div
                         className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
@@ -2985,57 +2892,6 @@ export default function Index({
                                 className="mt-4 space-y-4 border-t border-gray-100 pt-4"
                             >
 
-                                {/* <div>
-
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Date Type
-                                    </label>
-
-                                    <select
-                                        value={
-                                            addDateData.dateTypeId
-                                        }
-                                        onChange={(e) =>
-                                            setAddDateData(
-                                                'dateTypeId',
-                                                e.target.value
-                                            )
-                                        }
-                                        className="mt-1 p-2 block w-full rounded-sm border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    >
-
-                                        <option value="">
-                                            Select date type
-                                        </option>
-
-                                        {dateTypes.map(
-                                            (dt) => (
-                                                <option
-                                                    key={
-                                                        dt.dateTypeId
-                                                    }
-                                                    value={
-                                                        dt.dateTypeId
-                                                    }
-                                                >
-                                                    {
-                                                        dt.dateTypeName
-                                                    }
-                                                </option>
-                                            )
-                                        )}
-
-                                    </select>
-
-                                    {addDateErrors.dateTypeId && (
-                                        <p className="mt-1 text-xs text-red-600">
-                                            {
-                                                addDateErrors.dateTypeId
-                                            }
-                                        </p>
-                                    )}
-
-                                </div> */}
                                 {/* Date Type */}
                                 <div>
                                     <label
@@ -3236,9 +3092,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    EDIT DATE MODAL
-                ========================================================= */}
+                {/* EDIT DATE MODAL */}
                 {editDateModal.open && (
                     <div
                         className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
@@ -3472,9 +3326,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    DELETE DATE MODAL
-                ========================================================= */}
+                {/* DELETE DATE MODAL */}
                 {deleteDateDetail && (
                     <div
                         className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
@@ -3569,9 +3421,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    INFO MODAL
-                ========================================================= */}
+                {/* INFO MODAL */}
                 {infoDocument && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -3683,9 +3533,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    CREATE DOCUMENT MODAL
-                ========================================================= */}
+                {/* CREATE DOCUMENT MODAL*/}
                 {showCreate && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -3959,9 +3807,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    EDIT DOCUMENT MODAL
-                ========================================================= */}
+                {/* EDIT DOCUMENT MODAL */}
                 {editDocument && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -4258,9 +4104,7 @@ export default function Index({
                     </div>
                 )}
 
-                {/* =========================================================
-                    DELETE DOCUMENT MODAL
-                ========================================================= */}
+                {/* DELETE DOCUMENT MODAL */}
                 {deleteDocument && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
