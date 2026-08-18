@@ -445,6 +445,6 @@ All application routes below are protected by `auth` + `verified` middleware.
 
 # 👨‍💻 Author
 
-**Sabbir Hossain Niyaz**
+**[Sabbir Hossain Niyaz](https://github.com/SabbirNiyaz)**
 
 💼 Full Stack Developer Intern, BRACNet Limited 
