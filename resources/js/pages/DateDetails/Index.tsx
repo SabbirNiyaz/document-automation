@@ -47,6 +47,8 @@ interface DateDetail {
     notify_email: boolean;
     notify_sms: boolean;
 
+    emails_text_area: string | null;
+
     notification_before_days: number | null;
     notification_after_days: number | null;
 
@@ -155,6 +157,7 @@ export default function Index({
         notify_sms: false as boolean,
         notification_before_days: '',
         notification_after_days: '',
+        emails_text_area: '',
         status: 'Active' as 'Active' | 'Inactive',
     });
 
@@ -200,6 +203,7 @@ export default function Index({
         date_value: '',
         notify_email: false as boolean,
         notify_sms: false as boolean,
+        emails_text_area: '',
         notification_before_days: '',
         notification_after_days: '',
         status: 'Active' as 'Active' | 'Inactive',
@@ -214,6 +218,7 @@ export default function Index({
             date_value: dateDetail.date_value ?? '',
             notify_email: dateDetail.notify_email,
             notify_sms: dateDetail.notify_sms,
+            emails_text_area: dateDetail.emails_text_area ?? '',
             notification_before_days:
                 dateDetail.notification_before_days !== null
                     ? String(dateDetail.notification_before_days)
@@ -847,9 +852,19 @@ export default function Index({
 
                         </div>
 
+                        <div className="mt-4">
+                            <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                Notify Emails
+                            </dt>
+
+                            <dd className="mt-0.5 text-gray-700">
+                                {infoDateDetail.emails_text_area}
+                            </dd>
+                        </div>
+
                         <dl className="mt-4 grid grid-cols-1 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2 sm:gap-x-4">
 
-                            <div>
+                            {/* <div>
                                 <dt className="text-xs uppercase tracking-wide text-gray-400">
                                     Notification
                                 </dt>
@@ -857,9 +872,9 @@ export default function Index({
                                 <dd className="mt-0.5 text-gray-700">
                                     {notificationTypeLabel(infoDateDetail)}
                                 </dd>
-                            </div>
+                            </div> */}
 
-                            <div>
+                            {/* <div>
                                 <dt className="text-xs uppercase tracking-wide text-gray-400">
                                     Before / After
                                 </dt>
@@ -869,9 +884,9 @@ export default function Index({
                                     {' / '}
                                     {formatDays(infoDateDetail.notification_after_days)}
                                 </dd>
-                            </div>
+                            </div> */}
 
-                            <div>
+                            {/* <div>
                                 <dt className="text-xs uppercase tracking-wide text-gray-400">
                                     Before Sent At
                                 </dt>
@@ -889,7 +904,7 @@ export default function Index({
                                 <dd className="mt-0.5 text-gray-700">
                                     {formatDate(infoDateDetail.after_sent_at)}
                                 </dd>
-                            </div>
+                            </div> */}
 
                             <div>
                                 <dt className="text-xs uppercase tracking-wide text-gray-400">
@@ -1101,6 +1116,38 @@ export default function Index({
                                         {createErrors.notify_sms}
                                     </p>
                                 )}
+                            </div>
+
+                            { /* Email Text Area */}
+                            <div>
+
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Email Addresses
+                                </label>
+
+                                <textarea
+                                    rows={3}
+                                    value={
+                                        createData.emails_text_area
+                                    }
+                                    onChange={(e) =>
+                                        setCreateData(
+                                            'emails_text_area',
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="one@example.com, two@example.com (separate multiple emails with commas)"
+                                    className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                />
+
+                                {createErrors.emails_text_area && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {
+                                            createErrors.emails_text_area
+                                        }
+                                    </p>
+                                )}
+
                             </div>
 
                             {/* Notify Before / After */}
@@ -1386,6 +1433,29 @@ export default function Index({
                                         {editErrors.notify_sms}
                                     </p>
                                 )}
+                            </div>
+
+                            { /* Email Text Area */}
+                            <div>
+
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Email Addresses
+                                </label>
+
+                                <textarea
+                                    rows={3}
+                                    value={
+                                        editData.emails_text_area
+                                    }
+                                    onChange={(e) =>
+                                        setEditData(
+                                            'emails_text_area',
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="one@example.com, two@example.com (separate multiple emails with commas)"
+                                    className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                />
                             </div>
 
                             {/* Notify Before / After */}

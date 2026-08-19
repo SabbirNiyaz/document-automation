@@ -20,6 +20,7 @@ class DateDetail extends Model
         'date_value',
         'notify_email',
         'notify_sms',
+        'emails_text_area',
         'notification_before_days',
         'notification_after_days',
         'before_sent_at',

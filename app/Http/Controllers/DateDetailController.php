@@ -96,6 +96,9 @@ class DateDetailController extends Controller
 
                 'notify_sms' =>
                     $dateDetail->notify_sms,
+                
+                'emails_text_area' =>
+                    $dateDetail->emails_text_area,
 
                 'notification_before_days' =>
                     $dateDetail->notification_before_days,

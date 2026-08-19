@@ -54,6 +54,11 @@ class DateDetailRequest extends FormRequest
                 'boolean',
             ],
 
+            'emails_text_area' => [
+                'nullable',
+                'string',
+            ],
+
             'notification_before_days' => [
                 'nullable',
                 'integer',
