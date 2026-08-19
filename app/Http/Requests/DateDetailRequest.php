@@ -22,6 +22,8 @@ class DateDetailRequest extends FormRequest
         7,
         15,
         30,
+        60,
+        90,
     ];
 
     public function rules(): array

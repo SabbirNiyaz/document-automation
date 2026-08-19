@@ -22,6 +22,7 @@ class Document extends Model
 
     protected $fillable = [
         'title',
+        'short_code',
         'description',
         'partyName',
         'docType',

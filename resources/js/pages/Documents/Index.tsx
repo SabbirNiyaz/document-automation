@@ -40,9 +40,14 @@ interface DateDetailItem {
     date_value: string | null;
     notify_email: boolean;
     notify_sms: boolean;
+    emails_text_area: string | null;
     notification_before_days: number | null;
     notification_after_days: number | null;
     status: 'Active' | 'Inactive';
+    created_at?: string | null;
+    created_by?: User | null;
+    updated_at?: string | null;
+    updated_by?: User | null;
 }
 
 interface AttachmentItem {
@@ -59,6 +64,7 @@ interface AttachmentItem {
 interface DocumentItem {
     docId: number;
     title: string;
+    short_code: string | null;
     description: string | null;
     partyName: Party | null;
     docType: DocumentType | null;
@@ -182,6 +188,7 @@ export default function Index({
         clearErrors: clearCreateErrors,
     } = useForm({
         title: '',
+        short_code: '',
         description: '',
         partyName: '',
         docType: '',
@@ -228,6 +235,7 @@ export default function Index({
         clearErrors: clearEditErrors,
     } = useForm({
         title: '',
+        short_code: '',
         description: '',
         partyName: '',
         docType: '',
@@ -241,6 +249,7 @@ export default function Index({
 
         setEditData({
             title: document.title,
+            short_code: document.short_code ?? '',
             description: document.description ?? '',
             partyName: document.partyName
                 ? String(document.partyName.partyId)
@@ -321,7 +330,6 @@ export default function Index({
     }
 
     // Date Details Modal
-
     const [dateModal, setDateModal] = useState<{
         open: boolean;
         docId: number | null;
@@ -355,7 +363,6 @@ export default function Index({
     }
 
     // Add Date Modal
-
     const [addDateModal, setAddDateModal] =
         useState<{
             open: boolean;
@@ -379,6 +386,7 @@ export default function Index({
         date_value: '',
         notify_email: false as boolean,
         notify_sms: false as boolean,
+        emails_text_area: '',
         notification_before_days: '',
         notification_after_days: '',
         status: 'Active',
@@ -395,6 +403,7 @@ export default function Index({
             date_value: '',
             notify_email: false,
             notify_sms: false,
+            emails_text_area: '',
             notification_before_days: '',
             notification_after_days: '',
             status: 'Active',
@@ -460,6 +469,7 @@ export default function Index({
         date_value: '',
         notify_email: false as boolean,
         notify_sms: false as boolean,
+        emails_text_area: '',
         notification_before_days: '',
         notification_after_days: '',
         status: 'Active' as 'Active' | 'Inactive',
@@ -478,6 +488,7 @@ export default function Index({
             date_value: detail.date_value ?? '',
             notify_email: detail.notify_email,
             notify_sms: detail.notify_sms,
+            emails_text_area: detail.emails_text_area ?? '',
             notification_before_days:
                 detail.notification_before_days !== null
                     ? String(detail.notification_before_days)
@@ -572,6 +583,19 @@ export default function Index({
                 },
             }
         );
+    }
+
+    // Date Detail Info Modal (mirrors Attachment Info Modal)
+
+    const [infoDateDetail, setInfoDateDetail] =
+        useState<DateDetailItem | null>(null);
+
+    function openDateDetailInfo(detail: DateDetailItem) {
+        setInfoDateDetail(detail);
+    }
+
+    function closeDateDetailInfo() {
+        setInfoDateDetail(null);
     }
 
     // Attachments Modal (list, mirrors Date Details modal)
@@ -977,6 +1001,32 @@ export default function Index({
             );
         };
     }, [deleteDateDetail]);
+
+    useEffect(() => {
+        if (!infoDateDetail) {
+            return;
+        }
+
+        function handleKeyDown(
+            e: KeyboardEvent
+        ) {
+            if (e.key === 'Escape') {
+                closeDateDetailInfo();
+            }
+        }
+
+        document.addEventListener(
+            'keydown',
+            handleKeyDown
+        );
+
+        return () => {
+            document.removeEventListener(
+                'keydown',
+                handleKeyDown
+            );
+        };
+    }, [infoDateDetail]);
 
     useEffect(() => {
         if (!attachmentModal.open) {
@@ -1473,9 +1523,17 @@ export default function Index({
                                                 }
                                             </p>
 
-                                            <p className="text-sm font-medium text-gray-900">
+                                            <p className="text-sm font-medium text-gray-600">
+                                                <span className='text-xs uppercase tracking-wide text-gray-400'>Title: {' '}</span>
                                                 {
                                                     document.title
+                                                }
+                                            </p>
+
+                                            <p className="text-sm font-medium text-gray-600">
+                                                <span className='text-xs uppercase tracking-wide text-gray-400'>Short Code: {' '}</span>
+                                                {
+                                                    document.short_code
                                                 }
                                             </p>
                                         </div>
@@ -1674,6 +1732,10 @@ export default function Index({
                                     </th>
 
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                                        Short Code
+                                    </th>
+
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
                                         Description
                                     </th>
 
@@ -1729,6 +1791,12 @@ export default function Index({
                                             <td className="px-4 py-3 text-sm font-medium text-gray-900">
                                                 {
                                                     document.title
+                                                }
+                                            </td>
+
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-600">
+                                                {
+                                                    document.short_code
                                                 }
                                             </td>
 
@@ -2782,13 +2850,27 @@ export default function Index({
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
+                                                                    openDateDetailInfo(
+                                                                        detail
+                                                                    )
+                                                                }
+                                                                title="Info"
+                                                                aria-label="Info"
+                                                                className="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-gray-500 hover:bg-gray-100"
+                                                            >
+                                                                <InfoIcon className="h-4 w-4" />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
                                                                     openEditDateModal(
                                                                         detail
                                                                     )
                                                                 }
                                                                 title="Edit Date"
                                                                 aria-label="Edit Date"
-                                                                className="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-yellow-600 hover:bg-yellow-50"
+                                                                className="ml-1 inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-yellow-600 hover:bg-yellow-50"
                                                             >
                                                                 <Pencil className="h-4 w-4" />
                                                             </button>
@@ -2991,6 +3073,38 @@ export default function Index({
                                             {addDateErrors.notify_sms}
                                         </p>
                                     )}
+                                </div>
+
+                                { /* Email Text Area */}
+                                <div>
+
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Email Addresses
+                                    </label>
+
+                                    <textarea
+                                        rows={3}
+                                        value={
+                                            addDateData.emails_text_area
+                                        }
+                                        onChange={(e) =>
+                                            setAddDateData(
+                                                'emails_text_area',
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="one@example.com, two@example.com (separate multiple emails with commas)"
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+
+                                    {addDateErrors.emails_text_area && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {
+                                                addDateErrors.emails_text_area
+                                            }
+                                        </p>
+                                    )}
+
                                 </div>
 
                                 {/* Notify Before / After */}
@@ -3227,6 +3341,38 @@ export default function Index({
                                     )}
                                 </div>
 
+                                { /* Email Text Area */}
+                                <div>
+
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Email Addresses
+                                    </label>
+
+                                    <textarea
+                                        rows={3}
+                                        value={
+                                            editDateData.emails_text_area
+                                        }
+                                        onChange={(e) =>
+                                            setEditDateData(
+                                                'emails_text_area',
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="one@example.com, two@example.com (separate multiple emails with commas)"
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+
+                                    {editDateErrors.emails_text_area && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {
+                                                editDateErrors.emails_text_area
+                                            }
+                                        </p>
+                                    )}
+
+                                </div>
+
                                 {/* Notify Before / After */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -3421,6 +3567,131 @@ export default function Index({
                     </div>
                 )}
 
+                {/* DATE DETAIL INFO MODAL (mirrors Attachment Info Modal) */}
+                {infoDateDetail && (
+                    <div
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+                        onClick={closeDateDetailInfo}
+                    >
+                        <div
+                            className="w-full max-w-md rounded-sm bg-white p-5 shadow-lg"
+                            onClick={(e) =>
+                                e.stopPropagation()
+                            }
+                        >
+
+                            <div className="flex items-start justify-between gap-3">
+
+                                <div>
+
+                                    <h2 className="text-base font-semibold text-gray-900">
+                                        Date Detail Info
+                                    </h2>
+
+                                    <p className="mt-0.5 truncate text-sm text-gray-500">
+                                        {
+                                            infoDateDetail.dateTypeName ??
+                                            '—'
+                                        }
+                                    </p>
+
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeDateDetailInfo
+                                    }
+                                    className="rounded-sm p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+
+                            </div>
+
+                            <dl className="mt-4 grid grid-cols-1 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2 sm:gap-x-4">
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Notify Emails
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {infoDateDetail.emails_text_area
+                                            ? infoDateDetail.emails_text_area
+                                            : '—'}
+                                    </dd>
+                                </div>
+
+                            </dl>
+
+                            <dl className="mt-4 grid grid-cols-1 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-2 sm:gap-x-4">
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Created
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {formatDate(infoDateDetail.created_at ?? null)}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Created By
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {infoDateDetail.created_by
+                                            ? `${infoDateDetail.created_by.name} (ID: ${infoDateDetail.created_by.id})`
+                                            : '—'}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Updated
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {formatDate(infoDateDetail.updated_at ?? null)}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-gray-400">
+                                        Updated By
+                                    </dt>
+
+                                    <dd className="mt-0.5 text-gray-700">
+                                        {infoDateDetail.updated_by
+                                            ? `${infoDateDetail.updated_by.name} (ID: ${infoDateDetail.updated_by.id})`
+                                            : '—'}
+                                    </dd>
+                                </div>
+
+                            </dl>
+
+                            <div className="mt-5 flex justify-end">
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        closeDateDetailInfo
+                                    }
+                                    className="inline-flex items-center rounded-sm border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer"
+                                >
+                                    Close
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </div>
+                )}
+
                 {/* INFO MODAL */}
                 {infoDocument && (
                     <div
@@ -3607,6 +3878,39 @@ export default function Index({
                                         <p className="mt-1 text-sm text-red-600">
                                             {
                                                 createErrors.title
+                                            }
+                                        </p>
+                                    )}
+
+                                </div>
+
+                                {/* Short Code */}
+                                <div>
+
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Short Code
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        value={
+                                            createData.short_code
+                                        }
+                                        onChange={(e) =>
+                                            setCreateData(
+                                                'short_code',
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="Enter document short code"
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                        autoFocus
+                                    />
+
+                                    {createErrors.short_code && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {
+                                                createErrors.short_code
                                             }
                                         </p>
                                     )}
@@ -3880,6 +4184,39 @@ export default function Index({
                                         <p className="mt-1 text-sm text-red-600">
                                             {
                                                 editErrors.title
+                                            }
+                                        </p>
+                                    )}
+
+                                </div>
+
+                                {/* Short Code */}
+                                <div>
+
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Short Code
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        value={
+                                            editData.short_code
+                                        }
+                                        onChange={(e) =>
+                                            setEditData(
+                                                'short_code',
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="Enter document short code"
+                                        className="mt-1 block w-full rounded-sm border-gray-300 shadow-sm px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                        autoFocus
+                                    />
+
+                                    {editErrors.short_code && (
+                                        <p className="mt-1 text-sm text-red-600">
+                                            {
+                                                editErrors.short_code
                                             }
                                         </p>
                                     )}

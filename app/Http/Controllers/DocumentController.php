@@ -44,6 +44,7 @@ class DocumentController extends Controller
                 function ($query) use ($search) {
                     $query->where(function ($q) use ($search) {
                         $q->where('title', 'like', "%{$search}%")
+                            ->orWhere('short_code', 'like', "%{$search}%")
                             ->orWhere('description', 'like', "%{$search}%");
                     });
                 }
@@ -60,7 +61,10 @@ class DocumentController extends Controller
             function (Document $document) {
                 return [
                     'docId' => $document->docId,
+
                     'title' => $document->title,
+                    'short_code' => $document->short_code,
+
                     'description' => $document->description,
 
                     'partyName' => $document->party,
@@ -87,6 +91,7 @@ class DocumentController extends Controller
                             'date_value' => $detail->date_value?->format('Y-m-d'),
                             'notify_email' => $detail->notify_email,
                             'notify_sms' => $detail->notify_sms,
+                            'emails_text_area' => $detail->emails_text_area,
                             'notification_before_days' => $detail->notification_before_days,
                             'notification_after_days' => $detail->notification_after_days,
                             'status' => $detail->status,

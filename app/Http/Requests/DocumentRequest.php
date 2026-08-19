@@ -22,6 +22,12 @@ class DocumentRequest extends FormRequest
                 'max:255',
             ],
 
+            'short_code' => [
+                'required',
+                'string',
+                'max:10',
+            ],
+
             'description' => [
                 'nullable',
                 'string',
@@ -75,6 +81,12 @@ class DocumentRequest extends FormRequest
 
             'title.max' =>
                 'Document title cannot exceed 255 characters.',
+
+            'short_code.required' =>
+                'Short code is required.',
+                
+            'short_code.max' =>
+                'Short code cannot exceed 10 characters.',
 
             'partyName.required' =>
                 'Please select a party.',
