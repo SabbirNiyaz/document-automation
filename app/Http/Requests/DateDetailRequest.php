@@ -59,6 +59,17 @@ class DateDetailRequest extends FormRequest
             'emails_text_area' => [
                 'nullable',
                 'string',
+                function ($attribute, $value, $fail) {
+                    if (!$value) return;
+
+                    $emails = array_map('trim', explode(',', $value));
+
+                    foreach ($emails as $email) {
+                        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                            $fail("\"{$email}\" is not a valid email address.");
+                        }
+                    }
+                },
             ],
 
             'notification_before_days' => [
@@ -110,6 +121,8 @@ class DateDetailRequest extends FormRequest
 
             'notify_sms.boolean' =>
                 'Notify by SMS must be true or false.',
+            
+            'emails_text_area.string' => 'Emails must be a valid text value.',
 
             'notification_before_days.integer' =>
                 'Notify before must be a number of days.',

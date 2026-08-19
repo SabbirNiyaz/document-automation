@@ -87,4 +87,21 @@ class DateDetail extends Model
             'id'
         );
     }
+
+    /**
+     * Get the notification emails as a clean array.
+     */
+    public function getEmailsArrayAttribute(): array
+    {
+        if (!$this->emails_text_area) {
+            return [];
+        }
+
+        return collect(explode(',', $this->emails_text_area))
+            ->map(fn ($email) => trim($email))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
 }
