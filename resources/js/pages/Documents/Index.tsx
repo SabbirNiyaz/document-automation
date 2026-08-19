@@ -1759,13 +1759,13 @@ export default function Index({
                                         Status
                                     </th>
 
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                                    {/* <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
                                         Attachments
                                     </th>
 
                                     <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
                                         Date Details
-                                    </th>
+                                    </th> */}
 
                                     <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">
                                         Actions
@@ -1858,8 +1858,52 @@ export default function Index({
 
                                             </td>
 
-                                            <td className="px-4 py-3">
+                                            {/* <td className="px-4 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        openAttachmentModal(
+                                                            document
+                                                        )
+                                                    }
+                                                    title="Attachments"
+                                                    aria-label="Attachments"
+                                                    className="relative inline-flex items-center justify-center rounded-md bg-blue-500 p-2 text-white hover:bg-blue-600 cursor-pointer"
+                                                >
+                                                    <Paperclip className="h-4 w-4" />
 
+                                                    {document.attachments.length > 0 && (
+                                                        <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-semibold text-blue-600 ring-1 ring-blue-500">
+                                                            {document.attachments.length}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </td>
+
+                                            <td className="px-4 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        openDateModal(
+                                                            document
+                                                        )
+                                                    }
+                                                    title="View Dates"
+                                                    aria-label="View Dates"
+                                                    className="relative inline-flex items-center justify-center rounded-md bg-purple-500 p-2 text-white hover:bg-purple-600 cursor-pointer"
+                                                >
+                                                    <Calendar className="h-4 w-4" />
+                                                    {document.dateDetails.filter((d) => d.status === 'Active').length > 0 && (
+                                                        <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-semibold text-purple-600 ring-1 ring-purple-500">
+                                                            {document.dateDetails.filter((d) => d.status === 'Active').length}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </td> */}
+
+                                            <td className="px-4 py-3 text-right whitespace-nowrap">
+
+                                                {/* Attachment Button */}
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -1880,10 +1924,7 @@ export default function Index({
                                                     )}
                                                 </button>
 
-                                            </td>
-
-                                            <td className="px-4 py-3">
-
+                                                {/* Date Button */}
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -1893,7 +1934,7 @@ export default function Index({
                                                     }
                                                     title="View Dates"
                                                     aria-label="View Dates"
-                                                    className="relative inline-flex items-center justify-center rounded-md bg-purple-500 p-2 text-white hover:bg-purple-600 cursor-pointer"
+                                                    className="ml-3 relative inline-flex items-center justify-center rounded-md bg-purple-500 p-2 text-white hover:bg-purple-600 cursor-pointer"
                                                 >
                                                     <Calendar className="h-4 w-4" />
                                                     {document.dateDetails.filter((d) => d.status === 'Active').length > 0 && (
@@ -1903,9 +1944,6 @@ export default function Index({
                                                     )}
                                                 </button>
 
-                                            </td>
-
-                                            <td className="px-4 py-3 text-right whitespace-nowrap">
 
                                                 <button
                                                     type="button"
@@ -1916,7 +1954,7 @@ export default function Index({
                                                     }
                                                     title="Info"
                                                     aria-label="Info"
-                                                    className="inline-flex items-center justify-center rounded-md bg-gray-400 p-2 text-white hover:bg-gray-500 cursor-pointer"
+                                                    className="ml-3 inline-flex items-center justify-center rounded-md bg-gray-400 p-2 text-white hover:bg-gray-500 cursor-pointer"
                                                 >
                                                     <InfoIcon className="h-4 w-4" />
                                                 </button>
