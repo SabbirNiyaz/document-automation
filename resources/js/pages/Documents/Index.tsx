@@ -1421,7 +1421,7 @@ export default function Index({
                                     e.target.value
                                 )
                             }
-                            placeholder="Search by Title, Description or Document Type..."
+                            placeholder="Search by Title, Short Code, Description or Document Type..."
                             className="w-full rounded-sm border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-[420px]"
                         />
 
