@@ -1,11 +1,10 @@
-{{-- resources/views/emails/date-notification.blade.php --}}
 @component('mail::message')
 Dear Concern,
 
 I hope this email finds you well.
 
 This is to notify you that the **{{ $dateTypeName }}** for
-**{{ $documentTitle }}** ({{ $documentCode }})
+**{{ $documentTitle }}** Short Code: **{{ $documentCode }}**
 @if($phase === 'before')
 is scheduled for **{{ $dateValue }}**.
 @else
