@@ -11,5 +11,5 @@ Artisan::command('inspire', function () {
 Schedule::command('notifications:send-dates')->everyMinute();
 
 // Schedule::command('notifications:send-dates')
-//     ->dailyAt('10:00')
+//     ->dailyAt('17:35')
 //     ->timezone('Asia/Dhaka'); // set your timezone
