@@ -34,6 +34,7 @@ class User extends Authenticatable implements PasskeyUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
+    // protected $db_connection = 'loginMysql';
     /**
      * Get the attributes that should be cast.
      *

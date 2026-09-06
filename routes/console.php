@@ -8,8 +8,9 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('notifications:send-dates')->everyMinute();
+// Schedule::command('notifications:send-dates')->everyMinute();
 
-// Schedule::command('notifications:send-dates')
-//     ->dailyAt('17:35')
-//     ->timezone('Asia/Dhaka'); // set your timezone
+Schedule::command('notifications:send-dates')
+    ->dailyAt('13:05')
+    //->everyMinute()
+    ->timezone('Asia/Dhaka'); // set your timezone
