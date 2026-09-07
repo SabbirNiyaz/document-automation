@@ -1,15 +1,16 @@
 # 📄 Document Management System
 
-A **full-stack document tracking & compliance platform** built with **Laravel + Inertia.js + React (TypeScript)** for managing parties, documents, PDF attachments, and date-based renewal/notification tracking — secured with **Laravel Fortify**, **Two-Factor Authentication**, and **Passkey (WebAuthn)** login.
+A **full-stack document tracking & compliance platform** built with **Laravel + Inertia.js + React (TypeScript)** for managing parties, documents, PDF attachments, date-based renewal/notification tracking, and **automated email compliance notifications** — secured with **Laravel Fortify**, **Two-Factor Authentication**, and **Passkey (WebAuthn)** login.
 
 ---
 
 ## 📌 Features
 
 - 🏢 Party (Client/Vendor) Master Management
-- 📂 Document Master with Party & Document Type linking
+- 📂 Document Master with Party & Document Type linking, short-code identifiers
 - 🖇️ Multiple PDF Attachments per Document (with content-verified upload)
 - 📅 Date Details — expiry/renewal tracking per document with email/SMS notification windows
+- 📧 **Automated Email Notifications** — scheduled daily job sends compliance reminders (before/after date) via Markdown Mailables to configurable recipients
 - 🔐 Laravel Fortify Authentication (Login, Registration, Password Reset, Email Verification)
 - 🛡️ Two-Factor Authentication (TOTP + Recovery Codes)
 - 🔑 Passkey (WebAuthn) Login & Password Confirmation
@@ -19,6 +20,7 @@ A **full-stack document tracking & compliance platform** built with **Laravel + 
 - ⚛️ Inertia.js + React (TSX) SPA-style frontend, no separate API layer
 - 🎨 Sidebar-driven module navigation (shadcn/ui + Lucide icons)
 - ✅ Strict Form Request Validation (class-based, per module)
+- ⏱️ Laravel Task Scheduling (`Schedule::command`) for daily notification dispatch
 
 ---
 
@@ -109,6 +111,57 @@ When a file is uploaded to a document (`POST /attachments`):
 
 ---
 
+# 📧 Email Notification System
+
+## 📌 Overview
+
+The system automatically emails concerned parties when a tracked date (from `date_details`) approaches or passes its `notification_before_days` / `notification_after_days` window, preventing missed compliance deadlines.
+
+## ⏱️ Scheduling
+
+A custom Artisan command drives the notification pipeline and is registered via Laravel's task scheduler:
+
+```php
+Schedule::command('notifications:send-dates')
+    ->dailyAt('13:05')
+    ->timezone('Asia/Dhaka');
+```
+
+- Runs once daily (an `everyMinute()` variant is available, commented out, for local testing/debugging)
+- Requires the Laravel scheduler to be running (`schedule:run` via cron or `schedule:work` in development)
+
+## ✉️ Mailable: `DateNotificationMail`
+
+| Property | Description |
+|----------|------------|
+| `dateDetail` | The `DateDetail` model instance triggering the notification |
+| `phase` | `'before'` or `'after'` — determines subject line, tense, and messaging |
+
+**Subject line logic:**
+- **Before:** `Reminder: {dateTypeName} — {document title} ({short_code})`
+- **After:** `Overdue: {dateTypeName} — {document title} ({short_code})`
+
+Built as a **Markdown Mailable** (`emails.date-notification`), rendering:
+- Document title & short code
+- Date type name
+- The tracked date value (formatted `Y-m-d`)
+- Phase-specific messaging (upcoming deadline vs. overdue/compliance notice)
+
+## 🧠 Notification Flow
+
+1. Scheduler triggers `notifications:send-dates` daily at 13:05 (Asia/Dhaka)
+2. Command queries active `date_details` records due for a "before" or "after" notice, based on `notification_before_days` / `notification_after_days`
+3. For each match, `DateNotificationMail` is built and dispatched with the relevant `dateDetail` + `phase`
+4. `before_sent_at` / `after_sent_at` is stamped on the `date_details` record to prevent duplicate sends
+5. Recipients are drawn from the `emails_text_area` field on the `date_details` record — a comma-separated string parsed via the `DateDetail` model's `getEmailsArrayAttribute()` accessor, which trims, filters empties, and de-duplicates addresses into a clean array
+
+## 🛡️ Duplicate Prevention
+
+- `before_sent_at` and `after_sent_at` timestamps act as send-guards — once populated for a given window, that phase is not re-sent
+- Only records with `notify_email` enabled are processed
+
+---
+
 # 🗄️ Database Relationships
 
 | Relationship | Type | Description |
@@ -145,7 +198,7 @@ When a file is uploaded to a document (`POST /attachments`):
 | Column | Type | Description |
 |--------|------|------------|
 | id | BIGINT (PK) | Primary key |
-| user_id | BIGINT (FK) | Reference to `users`, cascade on delete |
+| user_id | INT (FK) | Reference to `users`, cascade on delete |
 | name | VARCHAR | Passkey label |
 | credential_id | VARCHAR (UNIQUE) | WebAuthn credential ID |
 | credential | JSON | WebAuthn credential payload |
@@ -158,7 +211,7 @@ When a file is uploaded to a document (`POST /attachments`):
 |--------|------|------------|
 | partyTypeId | INT (PK) | Primary key |
 | partyTypeName | VARCHAR(255) | Party type name (unique) |
-| status | ENUM | Active / Inactive |
+| status | ENUM (`Active`/`Inactive`, default `Active`) | Active / Inactive |
 | created_by | INT NULL | Creator user id |
 | modified_by | INT NULL | Last editor user id |
 | created_at / updated_at / deleted_at | TIMESTAMP | Standard + soft-delete timestamps |
@@ -183,7 +236,7 @@ When a file is uploaded to a document (`POST /attachments`):
 |--------|------|------------|
 | document_id | INT (PK) | Primary key |
 | document_name | VARCHAR(255) | Document type name (unique) |
-| status | ENUM | Active / Inactive |
+| status | ENUM (`Active`/`Inactive`, default `Active`) | Active / Inactive |
 | created_by / updated_by | INT NULL | Audit fields |
 | created_at / updated_at / deleted_at | TIMESTAMP | Standard + soft-delete timestamps |
 
@@ -193,12 +246,13 @@ When a file is uploaded to a document (`POST /attachments`):
 |--------|------|------------|
 | docId | INT (PK) | Primary key |
 | title | VARCHAR(255) | Document title |
+| short_code | VARCHAR(10) NULL | Short identifier code, referenced in notification subject lines |
 | description | TEXT NULL | Document description |
 | partyName | INT (FK) | Reference to `party_master.partyId`, restrict on delete |
 | docType | INT (FK) | Reference to `document_type.document_id`, restrict on delete |
 | date | DATE | Document date |
 | soft_copy | TEXT NULL | Soft-copy reference/path |
-| status | ENUM | Active / Inactive |
+| status | ENUM (`Active`/`Inactive`, default `Active`) | Active / Inactive |
 | created_by / updated_by | INT NULL | Audit fields |
 | created_at / updated_at / deleted_at | TIMESTAMP | Standard + soft-delete timestamps |
 
@@ -221,7 +275,7 @@ When a file is uploaded to a document (`POST /attachments`):
 |--------|------|------------|
 | dateTypeId | INT (PK) | Primary key |
 | dateTypeName | VARCHAR(255) | Date type name (unique) |
-| status | ENUM | Active / Inactive |
+| status | ENUM (`Active`/`Inactive`, default `Active`) | Active / Inactive |
 | created_by / updated_by | INT NULL | Audit fields |
 | created_at / updated_at / deleted_at | TIMESTAMP | Standard + soft-delete timestamps |
 
@@ -235,11 +289,12 @@ When a file is uploaded to a document (`POST /attachments`):
 | date_value | DATE | Tracked date (e.g. expiry/renewal) |
 | notify_email | BOOLEAN | Enable email notification (default false) |
 | notify_sms | BOOLEAN | Enable SMS notification (default false) |
-| notification_before_days | INT NULL | Days before date to notify (1/3/7/15/30) |
-| notification_after_days | INT NULL | Days after date to notify (1/3/7/15/30) |
+| notification_before_days | INT NULL | Days before date to notify (1/3/7/15/30/60/90) |
+| notification_after_days | INT NULL | Days after date to notify (1/3/7/15/30/60/90) |
+| emails_text_area | TEXT NULL | Comma-separated recipient email address(es) for this tracked date's notifications |
 | before_sent_at | DATETIME NULL | Timestamp last "before" notice was sent |
 | after_sent_at | DATETIME NULL | Timestamp last "after" notice was sent |
-| status | ENUM | Active / Inactive |
+| status | ENUM (`Active`/`Inactive`, default `Active`) | Active / Inactive |
 | created_by / updated_by | INT NULL | Audit fields |
 | created_at / updated_at / deleted_at | TIMESTAMP | Standard + soft-delete timestamps |
 
@@ -337,6 +392,16 @@ All application routes below are protected by `auth` + `verified` middleware.
 
 ---
 
+# ⏱️ Scheduled Commands
+
+| Command | Schedule | Description |
+|---------|---------|------------|
+| `notifications:send-dates` | Daily at `13:05` (`Asia/Dhaka`) | Scans `date_details` for due before/after notification windows and dispatches `DateNotificationMail` to configured recipients |
+
+> An `everyMinute()` variant is kept commented out in `routes/console.php` for local testing of the notification pipeline without waiting for the daily window.
+
+---
+
 # 📥 Form Request Validation Rules
 
 ## 🏢 Party Master Validation
@@ -347,6 +412,7 @@ All application routes below are protected by `auth` + `verified` middleware.
 
 ## 📄 Document Validation
 - `title` required, max 255 chars
+- `short_code` optional, max 10 chars
 - `partyName` must exist in `party_master`
 - `docType` must exist in `document_type`
 - `attachment` (optional at creation) — PDF only, max 10 MB
@@ -357,10 +423,13 @@ All application routes below are protected by `auth` + `verified` middleware.
 - Max size 10 MB
 
 ## 📅 Date Detail Validation
-- `dateTypeId` and `docId` must exist
+- `dateTypeId` must exist in `date_types`; `docId` must exist in `document_master`
 - `date_value` required, valid date
-- `notification_before_days` / `notification_after_days` restricted to `[1, 3, 7, 15, 30]`
-- `status` restricted to `Active` / `Inactive`
+- `notify_email` / `notify_sms` optional booleans
+- `notification_before_days` / `notification_after_days` restricted to `[1, 3, 7, 15, 30, 60, 90]`
+- `emails_text_area` optional; comma-separated string, each segment individually validated as a well-formed email address via a custom closure rule
+- `status` required, restricted to `Active` / `Inactive`
+- `stay` optional boolean (supports "save & stay on form" UX behavior)
 
 ## 🏷️ Type Validation (Party/Date/Document Types)
 - Name required, max 255 chars, unique (ignoring soft-deleted rows)
@@ -382,9 +451,11 @@ All application routes below are protected by `auth` + `verified` middleware.
 - Deleting an attachment removes both the DB record and the stored file
 - Deleting a document cascades and removes its attachments
 
-### 📅 Date Tracking Logic
+### 📅 Date Tracking & Notification Logic
 - Each document can have multiple tracked dates (e.g. license expiry, contract renewal)
 - Configurable email/SMS notification windows before and after the date
+- A daily scheduled Artisan command (`notifications:send-dates`) dispatches Markdown-based `DateNotificationMail` emails to the recipient(s) stored in `emails_text_area`
+- Subject and tone adapt automatically to the `phase` (`before` = upcoming reminder, `after` = overdue/compliance notice)
 - `before_sent_at` / `after_sent_at` timestamps prevent duplicate notifications
 
 ### 🗂️ Audit Trail
@@ -440,6 +511,7 @@ All application routes below are protected by `auth` + `verified` middleware.
 | UI | shadcn/ui + Tailwind CSS + Lucide Icons |
 | Database | MySQL |
 | File Storage | Laravel Filesystem (public disk) |
+| Mail | Laravel Mailables (Markdown), Task Scheduling |
 
 ---
 
@@ -447,4 +519,4 @@ All application routes below are protected by `auth` + `verified` middleware.
 
 **[Sabbir Hossain Niyaz](https://github.com/SabbirNiyaz)**
 
-💼 Full Stack Developer Intern, BRACNet Limited 
+💼 Full Stack Developer Intern, BRACNet Limited
