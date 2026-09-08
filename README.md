@@ -519,4 +519,4 @@ All application routes below are protected by `auth` + `verified` middleware.
 
 **[Sabbir Hossain Niyaz](https://github.com/SabbirNiyaz)**
 
-💼 Full Stack Developer Intern, BRACNet Limited
+💼 Software Engineer Intern, BRACNet Limited
