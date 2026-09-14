@@ -1,4 +1,4 @@
-# 📄 Document Management System
+# 📄 Document Automation System
 
 A **full-stack document tracking & compliance platform** built with **Laravel + Inertia.js + React (TypeScript)** for managing parties, documents, PDF attachments, date-based renewal/notification tracking, and **automated email compliance notifications** — secured with **Laravel Fortify**, **Two-Factor Authentication**, and **Passkey (WebAuthn)** login.
 
